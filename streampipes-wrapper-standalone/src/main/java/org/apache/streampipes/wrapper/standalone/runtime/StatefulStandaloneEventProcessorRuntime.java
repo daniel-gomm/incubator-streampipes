@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBindingParams> extends
-        StandalonePipelineElementRuntime<B, DataProcessorInvocation,
+        StatefulStandalonePipelineElementRuntime<B, DataProcessorInvocation,
                 EventProcessorRuntimeParams<B>, EventProcessorRuntimeContext, StatefulEventProcessor<B>> {
 
     public StatefulStandaloneEventProcessorRuntime(Supplier<StatefulEventProcessor<B>> supplier,

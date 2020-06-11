@@ -6,21 +6,21 @@ import org.apache.streampipes.wrapper.declarer.StatefulEventProcessorDeclarer;
 import org.apache.streampipes.wrapper.params.binding.EventProcessorBindingParams;
 import org.apache.streampipes.wrapper.params.runtime.EventProcessorRuntimeParams;
 import org.apache.streampipes.wrapper.standalone.ConfiguredEventProcessor;
-import org.apache.streampipes.wrapper.standalone.runtime.StandaloneEventProcessorRuntime;
+import org.apache.streampipes.wrapper.standalone.runtime.StatefulStandaloneEventProcessorRuntime;
 
 public abstract class StatefulStandaloneEventProcessingDeclarer<B extends
-        EventProcessorBindingParams> extends StatefulEventProcessorDeclarer<B, StandaloneEventProcessorRuntime> {
+        EventProcessorBindingParams> extends StatefulEventProcessorDeclarer<B, StatefulStandaloneEventProcessorRuntime> {
 
     public abstract ConfiguredEventProcessor<B> onInvocation(DataProcessorInvocation graph, ProcessingElementParameterExtractor extractor);
 
     @Override
-    public StandaloneEventProcessorRuntime<B> getRuntime(DataProcessorInvocation graph,
-                                                         ProcessingElementParameterExtractor extractor) {
+    public StatefulStandaloneEventProcessorRuntime getRuntime(DataProcessorInvocation graph,
+                                                              ProcessingElementParameterExtractor extractor) {
         ConfiguredEventProcessor<B> configuredEngine = onInvocation(graph, extractor);
         EventProcessorRuntimeParams<B> runtimeParams = new EventProcessorRuntimeParams<>
                 (configuredEngine.getBindingParams(), false);
 
-        return new StandaloneEventProcessorRuntime<>(configuredEngine.getEngineSupplier(),
+        return new StatefulStandaloneEventProcessorRuntime(configuredEngine.getEngineSupplier(),
                 runtimeParams);
     }
 
