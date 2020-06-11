@@ -19,6 +19,7 @@
 package org.apache.streampipes.pe.processor.counter;
 
 import org.apache.streampipes.model.DataProcessorType;
+import org.apache.streampipes.model.Response;
 import org.apache.streampipes.model.graph.DataProcessorDescription;
 import org.apache.streampipes.model.graph.DataProcessorInvocation;
 import org.apache.streampipes.sdk.builder.ProcessingElementBuilder;
@@ -26,13 +27,13 @@ import org.apache.streampipes.sdk.builder.StreamRequirementsBuilder;
 import org.apache.streampipes.sdk.extractor.ProcessingElementParameterExtractor;
 import org.apache.streampipes.sdk.helpers.EpRequirements;
 import org.apache.streampipes.sdk.helpers.Labels;
+import org.apache.streampipes.sdk.helpers.Locales;
 import org.apache.streampipes.sdk.helpers.OutputStrategies;
-import org.apache.streampipes.sdk.helpers.*;
 import org.apache.streampipes.sdk.utils.Assets;
 import org.apache.streampipes.wrapper.standalone.ConfiguredEventProcessor;
-import org.apache.streampipes.wrapper.standalone.declarer.StandaloneEventProcessingDeclarer;
+import org.apache.streampipes.wrapper.standalone.declarer.StatefulStandaloneEventProcessingDeclarer;
 
-public class CounterController extends StandaloneEventProcessingDeclarer<CounterParameters> {
+public class CounterController extends StatefulStandaloneEventProcessingDeclarer<CounterParameters> {
 
 	private static final String EXAMPLE_KEY = "example-key";
 
@@ -62,4 +63,13 @@ public class CounterController extends StandaloneEventProcessingDeclarer<Counter
 		return new ConfiguredEventProcessor<>(params, Counter::new);
 	}
 
+	@Override
+	public Response getState() {
+		return null;
+	}
+
+	@Override
+	public Response setState(String state) {
+		return null;
+	}
 }

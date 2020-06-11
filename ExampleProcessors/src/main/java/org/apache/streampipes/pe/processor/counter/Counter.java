@@ -19,18 +19,26 @@
 
 package org.apache.streampipes.pe.processor.counter;
 
+import com.google.gson.Gson;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
 import org.apache.streampipes.model.runtime.Event;
 import org.apache.streampipes.wrapper.context.EventProcessorRuntimeContext;
+import org.apache.streampipes.wrapper.model.PipelineElementState;
 import org.apache.streampipes.wrapper.routing.SpOutputCollector;
-import org.apache.streampipes.wrapper.runtime.EventProcessor;
-
+import org.apache.streampipes.wrapper.runtime.StatefulEventProcessor;
 import org.slf4j.Logger;
 
 public class Counter implements
-        EventProcessor<CounterParameters> {
+        StatefulEventProcessor<CounterParameters> {
 
   private static Logger LOG;
+  private CounterState state = new CounterState();
+
+  private class CounterState implements PipelineElementState{
+    public int count = 0;
+  }
+
+
 
   @Override
   public void onInvocation(CounterParameters parameters,
@@ -40,11 +48,24 @@ public class Counter implements
 
   @Override
   public void onEvent(Event event, SpOutputCollector out) throws SpRuntimeException {
-
+    event.addField("counter", ++state.count);
+    out.collect(event);
   }
 
   @Override
   public void onDetach() throws SpRuntimeException {
 
+  }
+
+  @Override
+  public String getState() throws SpRuntimeException {
+    Gson gson = new Gson();
+    return gson.toJson(state);
+  }
+
+  @Override
+  public void setState(String state) throws SpRuntimeException {
+    Gson gson = new Gson();
+    this.state = gson.fromJson(state, CounterState.class);
   }
 }
