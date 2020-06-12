@@ -19,6 +19,7 @@
 package org.apache.streampipes.container.init;
 
 import org.apache.streampipes.container.declarer.InvocableDeclarer;
+import org.apache.streampipes.container.declarer.StatefulInvocableDeclarer;
 import org.apache.streampipes.container.util.ElementInfo;
 import org.apache.streampipes.model.base.NamedStreamPipesEntity;
 
@@ -29,6 +30,7 @@ public enum RunningInstances {
     INSTANCE;
 
     private final Map<String, ElementInfo<NamedStreamPipesEntity, InvocableDeclarer>> runningInstances = new HashMap<>();
+    private final Map<String, ElementInfo<NamedStreamPipesEntity, StatefulInvocableDeclarer>> runningStatefulInstances = new HashMap<>(); //Added
 
 
     public void add(String id, NamedStreamPipesEntity description, InvocableDeclarer invocation) {
@@ -44,12 +46,31 @@ public enum RunningInstances {
         }
     }
 
+    //My code
+
+    public void addStateful(String id, NamedStreamPipesEntity description, StatefulInvocableDeclarer invocation){
+        runningInstances.put(id, new ElementInfo<>(description, invocation));
+        runningStatefulInstances.put(id, new ElementInfo<>(description, invocation));
+    }
+
+    public StatefulInvocableDeclarer getStatefulInvocation(String id){
+        ElementInfo<NamedStreamPipesEntity, StatefulInvocableDeclarer> result = runningStatefulInstances.get(id);
+        if (result != null) {
+            return result.getInvocation();
+        } else {
+            return null;
+        }
+    }
+
+    //End of my code
+
     public NamedStreamPipesEntity getDescription(String id) {
         return runningInstances.get(id).getDescription();
     }
 
     public void remove(String id) {
         runningInstances.remove(id);
+        runningStatefulInstances.remove(id); //Added
     }
 
     public Integer getRunningInstancesCount() {

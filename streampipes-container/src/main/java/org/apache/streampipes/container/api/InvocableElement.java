@@ -18,11 +18,10 @@
 
 package org.apache.streampipes.container.api;
 
-import org.eclipse.rdf4j.repository.RepositoryException;
-import org.eclipse.rdf4j.rio.RDFParseException;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
 import org.apache.streampipes.container.declarer.Declarer;
 import org.apache.streampipes.container.declarer.InvocableDeclarer;
+import org.apache.streampipes.container.declarer.StatefulInvocableDeclarer;
 import org.apache.streampipes.container.init.RunningInstances;
 import org.apache.streampipes.container.transform.Transformer;
 import org.apache.streampipes.container.util.Util;
@@ -34,18 +33,14 @@ import org.apache.streampipes.model.staticproperty.Option;
 import org.apache.streampipes.sdk.extractor.AbstractParameterExtractor;
 import org.apache.streampipes.sdk.extractor.StaticPropertyExtractor;
 import org.apache.streampipes.serializers.json.GsonSerializer;
+import org.eclipse.rdf4j.repository.RepositoryException;
+import org.eclipse.rdf4j.rio.RDFParseException;
 
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D extends Declarer,
         P extends AbstractParameterExtractor<I>> extends Element<D> {
@@ -148,6 +143,40 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
 
         return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
     }
+
+    //My code
+    @GET
+    @Path("{elementId}/{runningInstanceId}/state")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String getState(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
+
+        StatefulInvocableDeclarer runningInstance = RunningInstances.INSTANCE.getStatefulInvocation(runningInstanceId);
+
+        if (runningInstance != null) {
+            Response resp = runningInstance.getState();
+
+            return Util.toResponseString(resp);
+        }
+        return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
+
+    }
+
+    @PUT
+    @Path("{elementId}/{runningInstanceId}/state")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public String setState(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId, String payload){
+        StatefulInvocableDeclarer runningInstance = RunningInstances.INSTANCE.getStatefulInvocation(runningInstanceId);
+
+        if (runningInstance != null) {
+            Response resp = runningInstance.setState(payload);
+
+            return Util.toResponseString(resp);
+        }
+        return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
+    }
+
+    //End of my code
+
 
     protected abstract P getExtractor(I graph);
 
