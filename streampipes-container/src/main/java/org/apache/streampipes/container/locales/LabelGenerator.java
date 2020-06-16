@@ -42,6 +42,7 @@ public class LabelGenerator {
   private NamedStreamPipesEntity desc;
 
   public LabelGenerator(NamedStreamPipesEntity desc) {
+
     this.desc = desc;
   }
 

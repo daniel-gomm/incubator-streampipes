@@ -12,8 +12,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class StatefulEventProcessorDeclarer<B extends EventProcessorBindingParams, EPR extends
         StatefulPipelineElementRuntime> extends StatefulPipelineElementDeclarer<B, EPR, DataProcessorInvocation,
-        ProcessingElementParameterExtractor> implements StatefulInvocableDeclarer<DataProcessorDescription,
-        DataProcessorInvocation> {
+        ProcessingElementParameterExtractor> implements StatefulInvocableDeclarer {
 
     public static final Logger logger = LoggerFactory.getLogger(EventProcessorDeclarer.class.getCanonicalName());
 

@@ -35,11 +35,21 @@ public enum RunningInstances {
 
     public void add(String id, NamedStreamPipesEntity description, InvocableDeclarer invocation) {
         runningInstances.put(id, new ElementInfo<>(description, invocation));
+        //My code
+        if (invocation instanceof StatefulInvocableDeclarer){
+            addStateful(id, description, (StatefulInvocableDeclarer) invocation);
+            System.out.println("Added stateful");
+        }//end of my code
+
     }
 
     public InvocableDeclarer getInvocation(String id) {
         ElementInfo<NamedStreamPipesEntity, InvocableDeclarer> result = runningInstances.get(id);
-        if (result != null) {
+        //My code
+        if (result.getInvocation() instanceof StatefulInvocableDeclarer){
+            return (StatefulInvocableDeclarer) result.getInvocation();
+        } //end of my code
+        else if (result != null) {
             return result.getInvocation();
         } else {
             return null;
@@ -49,7 +59,6 @@ public enum RunningInstances {
     //My code
 
     public void addStateful(String id, NamedStreamPipesEntity description, StatefulInvocableDeclarer invocation){
-        runningInstances.put(id, new ElementInfo<>(description, invocation));
         runningStatefulInstances.put(id, new ElementInfo<>(description, invocation));
     }
 

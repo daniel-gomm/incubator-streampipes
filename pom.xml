@@ -868,6 +868,7 @@
         <module>streampipes-messaging-mqtt</module>
         <module>streampipes-maven-plugin</module>
         <module>ExampleProcessors</module>
+        <module>StatefulExamples</module>
     </modules>
 
     <profiles>
