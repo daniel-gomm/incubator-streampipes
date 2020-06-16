@@ -18,6 +18,7 @@
 
 package org.apache.streampipes.manager.execution.http;
 
+import org.eclipse.rdf4j.query.algebra.Str;
 import org.lightcouch.DocumentConflictException;
 import org.apache.streampipes.manager.execution.status.PipelineStatusManager;
 import org.apache.streampipes.manager.execution.status.SepMonitoringManager;
@@ -157,6 +158,31 @@ public class PipelineExecutor {
     }
     return status;
   }
+
+  //My code
+  public String getState(String pipelineElement){
+    List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
+    for(InvocableStreamPipesEntity currentEntity : graphs){
+      if (currentEntity.getElementId().endsWith(pipelineElement)){
+        HttpRequestBuilder requestBuilder = new HttpRequestBuilder(currentEntity, currentEntity.getBelongsTo());
+        return requestBuilder.getState();
+      }
+    }
+    return "Failed in PipelineExecutor";
+  }
+
+  public String setState(String pipelineElement, String state){
+    List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
+    for(InvocableStreamPipesEntity currentEntity : graphs){
+      if (currentEntity.getElementId().endsWith(pipelineElement)){
+        HttpRequestBuilder requestBuilder = new HttpRequestBuilder(currentEntity, currentEntity.getBelongsTo());
+        return requestBuilder.setState(state);
+      }
+    }
+    return "Failed in PipelineExecutor";
+  }
+
+  //End of my code
 
   private void setPipelineStarted(Pipeline pipeline) {
     pipeline.setRunning(true);

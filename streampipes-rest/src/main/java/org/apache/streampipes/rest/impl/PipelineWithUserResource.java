@@ -19,6 +19,7 @@
 package org.apache.streampipes.rest.impl;
 
 import com.google.gson.JsonSyntaxException;
+import org.eclipse.rdf4j.query.algebra.Str;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.streampipes.commons.exceptions.NoMatchingFormatException;
@@ -166,21 +167,23 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
     }
 
 
-    @Path("/{pipelineId}/state")
+    @Path("/{pipelineId}/{pipelineElement}/state")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @GsonWithIds
-    public Response getState(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId){
-        return null;
+    public String getState(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId, @PathParam("pipelineElement") String pipelineElement){
+        PipelineManagement pm = new PipelineManagement();
+        return pm.getState(pipelineId, pipelineElement);
     }
 
 
-    @Path("/{pipelineId}/state")
+    @Path("/{pipelineId}/{pipelineElement}/state")
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @GsonWithIds
-    public Response setState(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId){
-        return null;
+    public String setState(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId, @PathParam("pipelineElement") String pipelineElement, String state){
+        PipelineManagement pm = new PipelineManagement();
+        return pm.setState(pipelineId, pipelineElement, state);
     }
 
 

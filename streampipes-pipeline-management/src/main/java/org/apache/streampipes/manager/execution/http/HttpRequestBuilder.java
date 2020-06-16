@@ -24,6 +24,7 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.entity.ContentType;
+import org.eclipse.rdf4j.query.algebra.Str;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.streampipes.commons.Utils;
@@ -44,6 +45,33 @@ public class HttpRequestBuilder {
     this.payload = payload;
     this.belongsTo = belongsTo;
   }
+
+  //My code
+
+  public String getState(){
+    try {
+      Response httpResp = Request.Get(belongsTo).connectTimeout(10000).execute();
+      return httpResp.toString();
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
+      //LOG.error("Could not get State " + belongsTo, e.getMessage());
+      return "Failed in HttpRequestBuilder" + e.getMessage();
+    }
+  }
+
+  public String setState(String state){
+    try {
+      Response httpResp =
+              Request.Put(belongsTo).bodyString(state, ContentType.APPLICATION_JSON).connectTimeout(10000).execute();
+      return httpResp.toString();
+    } catch (Exception e) {
+      //LOG.error(e.getMessage());
+      System.out.println(e.getMessage());
+      return "Failed in HttpRequestBuilder" + e.getMessage();
+    }
+  }
+
+  //End of my code
 
   public PipelineElementStatus invoke() {
     LOG.info("Invoking element: " + belongsTo);

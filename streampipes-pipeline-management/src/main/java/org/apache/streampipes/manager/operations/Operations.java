@@ -148,6 +148,18 @@ public class Operations {
     return new PipelineExecutor(pipeline, visualize, storeStatus, monitor).stopPipeline();
   }
 
+  //My code
+  public static String getState(Pipeline pipeline, String pipelineElement){
+    return new PipelineExecutor(pipeline, true, true, true).getState(pipelineElement);
+  }
+
+  public static String setState(Pipeline pipeline, String pipelineElement, String state){
+    return new PipelineExecutor(pipeline, true, true, true).setState(pipelineElement, state);
+  }
+
+
+  //End of my code
+
   public static List<RdfEndpointItem> getEndpointUriContents(List<RdfEndpoint> endpoints) {
     return new EndpointItemFetcher(endpoints).getItems();
   }
