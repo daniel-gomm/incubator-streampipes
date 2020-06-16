@@ -44,13 +44,7 @@ import org.apache.streampipes.rest.shared.annotation.GsonWithIds;
 import java.util.Date;
 import java.util.UUID;
 
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -160,6 +154,38 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
         PipelineManagement pm = new PipelineManagement();
         return pm.stopPipeline(pipelineId);
     }
+
+    //My code
+    @Path("/{pipelineId}/migrate")  //Adjust
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @GsonWithIds
+    public Response migrate(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId){
+        //Implement
+        return null;
+    }
+
+
+    @Path("/{pipelineId}/state")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @GsonWithIds
+    public Response getState(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId){
+        return null;
+    }
+
+
+    @Path("/{pipelineId}/state")
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    @GsonWithIds
+    public Response setState(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId){
+        return null;
+    }
+
+
+    //End of my code
+
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
