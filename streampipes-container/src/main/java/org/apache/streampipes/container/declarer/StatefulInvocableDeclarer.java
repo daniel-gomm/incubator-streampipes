@@ -10,4 +10,6 @@ public interface StatefulInvocableDeclarer extends SemanticEventProcessingAgentD
 
     Response setState(String state);
 
+    Response detachRuntimeAndGetState();
+
 }

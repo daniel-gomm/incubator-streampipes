@@ -18,6 +18,7 @@
 
 package org.apache.streampipes.manager.operations;
 
+import com.google.gson.Gson;
 import org.apache.streampipes.commons.exceptions.NoSuitableSepasAvailableException;
 import org.apache.streampipes.commons.exceptions.SepaParseException;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
@@ -45,6 +46,7 @@ import org.apache.streampipes.model.client.pipeline.PipelineElementRecommendatio
 import org.apache.streampipes.model.client.pipeline.PipelineModificationMessage;
 import org.apache.streampipes.model.client.pipeline.PipelineOperationStatus;
 import org.apache.streampipes.model.client.runtime.ContainerProvidedOptionsParameterRequest;
+import org.apache.streampipes.model.graph.DataProcessorInvocation;
 import org.apache.streampipes.model.staticproperty.Option;
 import org.apache.streampipes.model.template.PipelineTemplateDescription;
 import org.apache.streampipes.model.template.PipelineTemplateInvocation;
@@ -149,6 +151,12 @@ public class Operations {
   }
 
   //My code
+
+  public static PipelineOperationStatus migrate(Pipeline pipeline, String nodes){
+    PipelineExecutor pe = new PipelineExecutor(pipeline,true, true, true);
+    return pe.migrate(nodes);
+  }
+
   public static String getState(Pipeline pipeline, String pipelineElement){
     return new PipelineExecutor(pipeline, true, true, true).getState(pipelineElement);
   }

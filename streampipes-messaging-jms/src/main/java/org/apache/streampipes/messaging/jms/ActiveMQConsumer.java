@@ -88,6 +88,21 @@ public class ActiveMQConsumer extends ActiveMQConnectionProvider implements
     return connected;
   }
 
+  //My code
+
+  @Override
+  public Long getOffset() throws SpRuntimeException {
+    //TODO
+    return null;
+  }
+
+  @Override
+  public void setOffset(Long offset) throws SpRuntimeException {
+  //TODO
+  }
+
+  //End of my code
+
   @Override
   public void close() throws Exception {
     disconnect();

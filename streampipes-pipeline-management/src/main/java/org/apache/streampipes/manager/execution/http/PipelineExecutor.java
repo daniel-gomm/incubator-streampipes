@@ -18,6 +18,8 @@
 
 package org.apache.streampipes.manager.execution.http;
 
+import com.google.gson.Gson;
+import org.apache.streampipes.model.state.PipelineElementState;
 import org.eclipse.rdf4j.query.algebra.Str;
 import org.lightcouch.DocumentConflictException;
 import org.apache.streampipes.manager.execution.status.PipelineStatusManager;
@@ -37,10 +39,7 @@ import org.apache.streampipes.storage.management.StorageDispatcher;
 import org.apache.streampipes.user.management.encryption.CredentialsManager;
 
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class PipelineExecutor {
@@ -49,6 +48,8 @@ public class PipelineExecutor {
   private boolean visualize;
   private boolean storeStatus;
   private boolean monitor;
+  private boolean getState = false;
+  private String nodes;
 
   public PipelineExecutor(Pipeline pipeline, boolean visualize, boolean storeStatus,
                           boolean monitor) {
@@ -57,6 +58,24 @@ public class PipelineExecutor {
     this.storeStatus = storeStatus;
     this.monitor = monitor;
   }
+
+  //My code
+  public PipelineExecutor(Pipeline pipeline, boolean visualize, boolean storeStatus,
+                          boolean monitor,String nodes) {
+    this.pipeline = pipeline;
+    this.visualize = visualize;
+    this.storeStatus = storeStatus;
+    this.monitor = monitor;
+    if (nodes == null){
+      this.getState = false;
+      this.nodes = null;
+    }else{
+      this.getState = true;
+      this.nodes = null;
+    }
+  }
+  //End of my code
+
 
   public PipelineOperationStatus startPipeline() {
 
@@ -126,13 +145,20 @@ public class PipelineExecutor {
   }
 
   public PipelineOperationStatus stopPipeline() {
+    //Modified to support state retrieval
     List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
     List<SpDataSet> dataSets = TemporaryGraphStorage.datasetStorage.get(pipeline.getPipelineId());
 
-    PipelineOperationStatus status = new GraphSubmitter(pipeline.getPipelineId(),
-            pipeline.getName(),  graphs, dataSets)
-            .detachGraphs();
-
+    PipelineOperationStatus status;
+    if (getState){
+      status = new GraphSubmitter(pipeline.getPipelineId(),
+              pipeline.getName(), graphs, dataSets)
+              .detachGraphs();
+    }else {
+      status = new GraphSubmitter(pipeline.getPipelineId(),
+              pipeline.getName(), graphs, dataSets)
+              .detachGraphs();
+    }
     if (status.isSuccess()) {
       if (visualize) {
         StorageDispatcher
@@ -164,8 +190,9 @@ public class PipelineExecutor {
     List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
     for(InvocableStreamPipesEntity currentEntity : graphs){
       if (currentEntity.getElementId().endsWith(pipelineElement)){
-        HttpRequestBuilder requestBuilder = new HttpRequestBuilder(currentEntity, currentEntity.getBelongsTo());
-        return requestBuilder.getState();
+        HttpRequestBuilder requestBuilder = new HttpRequestBuilder(currentEntity, currentEntity.getElementId()+"/state");
+        String resp = requestBuilder.getState();
+        return resp;
       }
     }
     return "Failed in PipelineExecutor";
@@ -175,12 +202,82 @@ public class PipelineExecutor {
     List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
     for(InvocableStreamPipesEntity currentEntity : graphs){
       if (currentEntity.getElementId().endsWith(pipelineElement)){
-        HttpRequestBuilder requestBuilder = new HttpRequestBuilder(currentEntity, currentEntity.getBelongsTo());
+        HttpRequestBuilder requestBuilder = new HttpRequestBuilder(currentEntity, currentEntity.getElementId()+"/state");
         return requestBuilder.setState(state);
       }
     }
     return "Failed in PipelineExecutor";
   }
+
+
+  public PipelineOperationStatus migrate(String nodes){
+    List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
+    List<SpDataSet> dataSets = TemporaryGraphStorage.datasetStorage.get(pipeline.getPipelineId());
+
+    Gson gson = new Gson();
+
+    class Nodes{
+      String oldNode;
+      String newNode;
+    }
+
+    Nodes node = gson.fromJson(nodes, Nodes.class);
+    //Stop and get states
+    Map<String, PipelineElementState> states = new GraphSubmitter(pipeline.getPipelineId(),
+            pipeline.getName(), graphs, dataSets).detachGraphsGetState();
+
+    if (states != null) {
+      PipelineStatusManager.addPipelineStatus(pipeline.getPipelineId(),
+              new PipelineStatusMessage(pipeline.getPipelineId(),
+                      System.currentTimeMillis(),
+                      PipelineStatusMessageType.PIPELINE_STOPPED.title(),
+                      PipelineStatusMessageType.PIPELINE_STOPPED.description()));
+    }
+
+    //Change pipeline description
+    boolean foundElement = false;
+    for (DataProcessorInvocation sepa : this.pipeline.getSepas()){
+      if (sepa.getElementId().equals(node.oldNode)){
+        foundElement = true;
+        sepa.setElementId(node.newNode);
+      };
+    }
+    //Start with received states
+
+
+
+    List<DataProcessorInvocation> sepas = pipeline.getSepas();
+    List<DataSinkInvocation> secs = pipeline.getActions();
+    dataSets = pipeline.getStreams().stream().filter(s -> s instanceof SpDataSet).map(s -> new
+            SpDataSet((SpDataSet) s)).collect(Collectors.toList());
+
+    for (SpDataSet ds : dataSets) {
+      ds.setCorrespondingPipeline(pipeline.getPipelineId());
+    }
+
+    graphs = new ArrayList<>();
+    graphs.addAll(sepas);
+    graphs.addAll(secs);
+
+    List<InvocableStreamPipesEntity> decryptedGraphs = decryptSecrets(graphs);
+
+    graphs.forEach(g -> g.setStreamRequirements(Arrays.asList()));
+
+    PipelineOperationStatus status = new GraphSubmitter(pipeline.getPipelineId(),
+            pipeline.getName(), decryptedGraphs, dataSets)
+            .invokeGraphs(states);
+
+    if (status.isSuccess()) {
+      storeInvocationGraphs(pipeline.getPipelineId(), graphs, dataSets);
+
+      PipelineStatusManager.addPipelineStatus(pipeline.getPipelineId(),
+              new PipelineStatusMessage(pipeline.getPipelineId(), System.currentTimeMillis(), PipelineStatusMessageType.PIPELINE_STARTED.title(), PipelineStatusMessageType.PIPELINE_STARTED.description()));
+
+    }
+
+    return status;
+  }
+
 
   //End of my code
 

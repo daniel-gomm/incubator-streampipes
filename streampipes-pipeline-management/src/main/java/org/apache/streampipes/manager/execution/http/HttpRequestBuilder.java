@@ -24,6 +24,8 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.entity.ContentType;
+import org.apache.streampipes.model.state.PipelineElementState;
+import org.apache.streampipes.model.state.StatefulPayload;
 import org.eclipse.rdf4j.query.algebra.Str;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +53,7 @@ public class HttpRequestBuilder {
   public String getState(){
     try {
       Response httpResp = Request.Get(belongsTo).connectTimeout(10000).execute();
-      return httpResp.toString();
+      return httpResp.returnContent().asString();
     } catch (Exception e) {
       System.out.println(e.getMessage());
       //LOG.error("Could not get State " + belongsTo, e.getMessage());
@@ -102,6 +104,7 @@ public class HttpRequestBuilder {
     return convert(streamPipesResp);
   }
 
+
   private String jsonLd() throws Exception {
     return Utils.asString(new JsonLdTransformer().toJsonLd(payload));
   }
@@ -109,4 +112,43 @@ public class HttpRequestBuilder {
   private PipelineElementStatus convert(org.apache.streampipes.model.Response response) {
     return new PipelineElementStatus(belongsTo, payload.getName(), response.isSuccess(), response.getOptionalMessage());
   }
+
+  //My code
+
+  private String statefulJsonLd(PipelineElementState state) throws Exception{
+    Gson gson = new Gson();
+    StatefulPayload load = new StatefulPayload();
+    load.pipelineElementState = state;
+    load.namedStreamPipesEntity = jsonLd();
+    return gson.toJson(load);
+  }
+
+
+  //Noch nicht an irgendwas angebunden
+  public PipelineElementStatus invoke(PipelineElementState state) {
+    LOG.info("Invoking element: " + belongsTo);
+    try {
+      String statefulJsonLd = statefulJsonLd(state);
+      Response httpResp =
+              Request.Post(belongsTo).bodyString(statefulJsonLd, ContentType.APPLICATION_JSON).connectTimeout(10000).execute();
+      return handleResponse(httpResp);
+    } catch (Exception e) {
+      LOG.error(e.getMessage());
+      return new PipelineElementStatus(belongsTo, payload.getName(), false, e.getMessage());
+    }
+  }
+
+  public PipelineElementStatus detachAndGetState(){
+    try {
+      Response httpResp = Request.Delete(belongsTo).connectTimeout(10000).execute();
+      return handleResponse(httpResp);
+    } catch (Exception e) {
+      //Adjust
+      LOG.error("Could not stop pipeline " + belongsTo, e.getMessage());
+      return null;
+    }
+  }
+
+  //End of my code
+
 }

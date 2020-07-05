@@ -18,6 +18,8 @@
 
 package org.apache.streampipes.container.api;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
 import org.apache.streampipes.container.declarer.Declarer;
 import org.apache.streampipes.container.declarer.InvocableDeclarer;
@@ -29,6 +31,8 @@ import org.apache.streampipes.model.Response;
 import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
 import org.apache.streampipes.model.runtime.RuntimeOptionsRequest;
 import org.apache.streampipes.model.runtime.RuntimeOptionsResponse;
+import org.apache.streampipes.model.state.PipelineElementState;
+import org.apache.streampipes.model.state.StatefulPayload;
 import org.apache.streampipes.model.staticproperty.Option;
 import org.apache.streampipes.sdk.extractor.AbstractParameterExtractor;
 import org.apache.streampipes.sdk.extractor.StaticPropertyExtractor;
@@ -60,6 +64,19 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Produces(MediaType.APPLICATION_JSON)
     public String invokeRuntime(@PathParam("elementId") String elementId, String payload) {
 
+        //My code
+        String originalPayload = new String(payload);
+        StatefulPayload load = null;
+        try {
+            Gson gson = new Gson();
+            load = gson.fromJson(payload, StatefulPayload.class);
+            payload = load.namedStreamPipesEntity;
+        }catch (JsonSyntaxException e){
+            payload = originalPayload;
+        }
+
+        //End of my code
+
         try {
             I graph = Transformer.fromJsonLd(clazz, payload);
 
@@ -73,6 +90,13 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
                 String runningInstanceId = getInstanceId(graph.getElementId(), elementId);
                 RunningInstances.INSTANCE.add(runningInstanceId, graph, declarer.getClass().newInstance());
                 Response resp = RunningInstances.INSTANCE.getInvocation(runningInstanceId).invokeRuntime(graph);
+                //My code
+
+                if (load != null){
+                    setState(elementId, runningInstanceId, new Gson().toJson(load.pipelineElementState));
+                }
+
+                //End of my code
                 return Util.toResponseString(resp);
             }
         } catch (RDFParseException | IOException | RepositoryException | InstantiationException | IllegalAccessException e) {
@@ -154,7 +178,6 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
 
         if (runningInstance != null) {
             Response resp = runningInstance.getState();
-
             return Util.toResponseString(resp);
         }
         return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
@@ -162,11 +185,10 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     }
 
     @PUT
-    @Path("{elementId}/{runningInstanceId}/state")
+    @Path("{elementId}/{runningInstanceId}/state/{offset}")
     @Consumes(MediaType.APPLICATION_JSON)
     public String setState(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId, String payload){
         StatefulInvocableDeclarer runningInstance = RunningInstances.INSTANCE.getStatefulInvocation(runningInstanceId);
-
         if (runningInstance != null) {
             Response resp = runningInstance.setState(payload);
 
@@ -175,6 +197,25 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
         return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
     }
 
+    //Only temporary until StateDB
+    @DELETE
+    @Path("{elementId}/{runningInstanceId}/state")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String stopAndGetState(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
+        StatefulInvocableDeclarer runningInstance = RunningInstances.INSTANCE.getStatefulInvocation(runningInstanceId);
+
+        if (runningInstance != null) {
+            Response resp = runningInstance.detachRuntimeAndGetState();
+
+            if (resp.isSuccess()) {
+                RunningInstances.INSTANCE.remove(runningInstanceId);
+            }
+
+            return Util.toResponseString(resp);
+        }
+
+        return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
+    }
     //End of my code
 
 

@@ -18,7 +18,9 @@
 
 package org.apache.streampipes.rest.impl;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import org.apache.streampipes.model.graph.DataProcessorInvocation;
 import org.eclipse.rdf4j.query.algebra.Str;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,7 @@ import org.apache.streampipes.model.client.pipeline.PipelineOperationStatus;
 import org.apache.streampipes.rest.api.IPipeline;
 import org.apache.streampipes.rest.management.PipelineManagement;
 import org.apache.streampipes.rest.shared.annotation.GsonWithIds;
+import org.w3c.dom.Node;
 
 import java.util.Date;
 import java.util.UUID;
@@ -161,9 +164,17 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @GsonWithIds
-    public Response migrate(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId){
+    public Response migrate(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId, String nodes){
         //Implement
-        return null;
+        try{
+            Pipeline pipeline = getPipelineStorage()
+                    .getPipeline(pipelineId);
+            PipelineOperationStatus status = Operations.migrate(pipeline, nodes);
+            return ok(status);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return statusMessage(Notifications.error(NotificationType.UNKNOWN_ERROR));
     }
 
 

@@ -19,6 +19,7 @@
 package org.apache.streampipes.wrapper.standalone.routing;
 
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
+import org.apache.streampipes.messaging.EventConsumer;
 import org.apache.streampipes.messaging.InternalEventProcessor;
 import org.apache.streampipes.model.grounding.TransportFormat;
 import org.apache.streampipes.model.grounding.TransportProtocol;
@@ -73,4 +74,20 @@ public class StandaloneSpInputCollector<T extends TransportProtocol> extends
       }
     }
   }
+
+  //My code
+
+  public String getConsumerState() throws SpRuntimeException{
+    return getConsumerState(false);
+  }
+
+  public String getConsumerState(boolean close) throws SpRuntimeException{
+    return protocolDefinition.getConsumer().getConsumerState(close);
+  }
+
+  public void setConsumerState(String state) throws SpRuntimeException{
+    protocolDefinition.getConsumer().setConsumerState(state);
+  }
+
+  //End of my code
 }

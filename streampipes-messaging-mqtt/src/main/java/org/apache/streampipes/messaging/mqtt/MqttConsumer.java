@@ -59,4 +59,20 @@ public class MqttConsumer extends AbstractMqttConnector implements EventConsumer
   public Boolean isConnected() {
     return this.connected;
   }
+
+  //My code
+
+  @Override
+  public Long getOffset(boolean close) throws SpRuntimeException {
+    //TODO
+    return null;
+  }
+
+  @Override
+  public void setOffset(Long offset) throws SpRuntimeException {
+  //TODO
+  }
+
+  //End of my code
+
 }

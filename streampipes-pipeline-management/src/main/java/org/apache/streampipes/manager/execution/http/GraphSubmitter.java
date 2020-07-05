@@ -18,6 +18,9 @@
 
 package org.apache.streampipes.manager.execution.http;
 
+import com.google.gson.Gson;
+import org.apache.streampipes.model.base.NamedStreamPipesEntity;
+import org.apache.streampipes.model.state.PipelineElementState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.streampipes.model.SpDataSet;
@@ -25,8 +28,7 @@ import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
 import org.apache.streampipes.model.client.pipeline.PipelineElementStatus;
 import org.apache.streampipes.model.client.pipeline.PipelineOperationStatus;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class GraphSubmitter {
 
@@ -105,4 +107,68 @@ public class GraphSubmitter {
 
     return status;
   }
+
+  //My code
+
+  public Map<String, PipelineElementState> detachGraphsGetState(){
+    Map<String, PipelineElementState> states = new HashMap<String, PipelineElementState>();
+    Gson gson = new Gson();
+
+    PipelineOperationStatus status = new PipelineOperationStatus();
+    status.setPipelineId(pipelineId);
+    status.setPipelineName(pipelineName);
+
+    for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ){
+      InvocableStreamPipesEntity spe = iter.next();
+      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getUri() + "state").detach();
+      status.addPipelineElementStatus(resp);
+      if (resp.isSuccess()) {
+        states.put(spe.getBelongsTo(), gson.fromJson(resp.getOptionalMessage(), PipelineElementState.class));
+      }
+      status.setSuccess(status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess));
+
+    }
+
+    //Not handled right now
+    if (status.isSuccess()) {
+      status.setTitle("Pipeline " + pipelineName + " successfully stopped");
+    } else {
+      status.setTitle("Could not stop all pipeline elements of pipeline " + pipelineName + ".");
+    }
+
+    return states;
+  }
+
+
+  public PipelineOperationStatus invokeGraphs(Map<String, PipelineElementState> states) {
+    PipelineOperationStatus status = new PipelineOperationStatus();
+    status.setPipelineId(pipelineId);
+    status.setPipelineName(pipelineName);
+
+
+    for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ) {
+      InvocableStreamPipesEntity spe = iter.next();
+      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getUri() + "state").invoke(states.get(spe.getBelongsTo()));
+      status.addPipelineElementStatus(resp);
+    }
+
+
+    if (status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess)) {
+      dataSets.forEach(dataSet ->
+              status.addPipelineElementStatus
+                      (new HttpRequestBuilder(dataSet, dataSet.getUri()).invoke()));
+    }
+    status.setSuccess(status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess));
+
+    if (status.isSuccess()) {
+      status.setTitle("Pipeline " + pipelineName + " successfully started");
+    } else {
+      LOG.info("Could not start pipeline, initializing rollback...");
+      rollbackInvokedPipelineElements(status);
+      status.setTitle("Could not start pipeline" + pipelineName + ".");
+    }
+    return status;
+  }
+  //End of my code
+
 }

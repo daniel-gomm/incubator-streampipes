@@ -18,10 +18,10 @@
 
 package org.apache.streampipes.messaging.kafka;
 
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +34,7 @@ import org.apache.streampipes.model.grounding.SimpleTopicDefinition;
 import org.apache.streampipes.model.grounding.WildcardTopicDefinition;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Properties;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, Runnable,
@@ -45,8 +43,15 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
   private String topic;
   private InternalEventProcessor<byte[]> eventProcessor;
   private KafkaTransportProtocol protocol;
-  private volatile boolean isRunning;
+  private boolean isRunning;
   private Boolean patternTopic = false;
+
+  //My code
+
+  private Long offset;
+  private String groupId = null;
+
+  //End of my code
 
   private static final Logger LOG = LoggerFactory.getLogger(SpKafkaConsumer.class);
 
@@ -78,6 +83,16 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
 
   @Override
   public void run() {
+    //My code
+    Properties props = getProperties();
+    if (this.groupId != null){
+      //If a groupId has been provided set it in the config
+      props.replace(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
+    } else{
+      //If no groupId has been provided save the generated ID
+      this.groupId = props.get(ConsumerConfig.GROUP_ID_CONFIG).toString();
+    }
+    //End of my code
     KafkaConsumer<String, byte[]> kafkaConsumer = new KafkaConsumer<>(getProperties());
     if (!patternTopic) {
       kafkaConsumer.subscribe(Collections.singletonList(topic));
@@ -95,14 +110,27 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
         }
       });
     }
+    //My code
+    if (this.offset !=  null){
+      //If an offset has been provided seek the offset to pick up processing from there
+      kafkaConsumer.seek(new TopicPartition(topic, 0), offset);
+    }
+    //End of my code
     while (isRunning) {
       ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(100);
       for (ConsumerRecord<String, byte[]> record : records) {
         eventProcessor.onEvent(record.value());
+        //My code
+        //save the offset each time an event is processed
+        this.offset = record.offset();
+        //End of my code
       }
     }
     LOG.info("Closing Kafka Consumer.");
     kafkaConsumer.close();
+    //My code
+    notify();
+    //End of my code
   }
 
   private String replaceWildcardWithPatternFormat(String topic) {
@@ -135,11 +163,48 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
   public void disconnect() throws SpRuntimeException {
     LOG.info("Kafka consumer: Disconnecting from " + topic);
     this.isRunning = false;
-
   }
 
   @Override
   public Boolean isConnected() {
     return isRunning;
   }
+
+
+  //My code
+  @Override
+  public synchronized String getConsumerState(boolean close) throws SpRuntimeException {
+    if (close)
+      try{
+        close();
+        return "GroupId:" + this.groupId;
+      }catch (Exception e){}
+    return "Offset:" + offset;
+  }
+
+  @Override
+  public void setConsumerState(String state) throws SpRuntimeException {
+    if (state.startsWith("GroupId:")){
+      state = state.replaceFirst("GroupId:", "");
+      this.groupId = state;
+    }
+    else if (state.startsWith("Offset:")){
+      state = state.replaceFirst("Offset:", "");
+      this.offset = Long.parseLong(state);
+      this.protocol.setOffset(state);
+    }
+    else {
+      throw new SpRuntimeException("Failed to restore Consumer state of Consumer with topic "+ this.topic);
+    }
+  }
+
+
+  private void close() throws SpRuntimeException{
+    disconnect();
+    try{
+      wait();
+    }catch (InterruptedException ie){/**Unhandled rn**/}
+  }
+
+  //End of my code
 }

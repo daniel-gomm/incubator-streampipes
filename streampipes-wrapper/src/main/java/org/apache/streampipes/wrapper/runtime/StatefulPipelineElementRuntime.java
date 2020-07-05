@@ -8,4 +8,6 @@ public abstract class StatefulPipelineElementRuntime extends PipelineElementRunt
 
     abstract public void setState(String state) throws SpRuntimeException;
 
+    abstract public String discardWithState() throws SpRuntimeException;
+
 }

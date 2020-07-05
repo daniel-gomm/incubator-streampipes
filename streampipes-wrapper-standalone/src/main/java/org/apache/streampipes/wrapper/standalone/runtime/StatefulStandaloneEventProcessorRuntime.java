@@ -18,8 +18,10 @@
 
 package org.apache.streampipes.wrapper.standalone.runtime;
 
+import com.google.gson.Gson;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
 import org.apache.streampipes.model.graph.DataProcessorInvocation;
+import org.apache.streampipes.model.state.PipelineElementState;
 import org.apache.streampipes.wrapper.context.EventProcessorRuntimeContext;
 import org.apache.streampipes.wrapper.params.binding.EventProcessorBindingParams;
 import org.apache.streampipes.wrapper.params.runtime.EventProcessorRuntimeParams;
@@ -27,7 +29,10 @@ import org.apache.streampipes.wrapper.routing.SpInputCollector;
 import org.apache.streampipes.wrapper.routing.SpOutputCollector;
 import org.apache.streampipes.wrapper.runtime.StatefulEventProcessor;
 import org.apache.streampipes.wrapper.standalone.manager.ProtocolManager;
+import org.apache.streampipes.wrapper.standalone.routing.StandaloneSpInputCollector;
+import org.eclipse.rdf4j.query.algebra.Str;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -91,7 +96,51 @@ public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBin
 
     //My code
 
+    public void bindWithState(String state) throws SpRuntimeException {
+        Gson gson = new Gson();
+        PipelineElementState elementState = gson.fromJson(state, PipelineElementState.class);
+        bindEngine();
+        setState(elementState.state);
+        getInputCollectors().forEach(is -> is.registerConsumer(instanceId, this));
+        int i = 0;
+        for (SpInputCollector spInputCollector : getInputCollectors()) {
+            if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+                StandaloneSpInputCollector inputCollector = (StandaloneSpInputCollector) spInputCollector;
+                inputCollector.setConsumerState((String) elementState.consumerState.get(i++));
+            }
+        }
+        prepareRuntime();
+    }
+
+    public String discardWithState() throws SpRuntimeException{
+        PipelineElementState state = new PipelineElementState();
+        state.state = engine.getState();
+        discardEngine();
+        for (SpInputCollector spInputCollector : getInputCollectors()) {
+            if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+                state.consumerState.add(((StandaloneSpInputCollector) spInputCollector).getConsumerState(true));
+            }
+        }
+        //Reihenfolge vertauscht (zurück tauschen?? sollte zu fehlern führen so wie es jetzt ist)
+        getInputCollectors().forEach(is -> is.unregisterConsumer(instanceId));
+        //postDiscard(); sollte nicht mehr nötig sein
+
+        //Serialize state of pe
+        Gson gson = new Gson();
+        return gson.toJson(state);
+    }
+
     public String getState() throws SpRuntimeException {
+        String state = "";
+
+        for (SpInputCollector spInputCollector : getInputCollectors()) {
+            if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+                StandaloneSpInputCollector inputCollector = (StandaloneSpInputCollector) spInputCollector;
+                state+=inputCollector.getConsumerState()+",\n";
+            }
+        }
+        state = (state != "") ? state.substring(0, state.length()-2):state;
+        System.out.println("State: " + state);
         return engine.getState();
     }
 
