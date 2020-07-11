@@ -49,6 +49,7 @@ public class Example implements
 
   @Override
   public void onEvent(Event event, SpOutputCollector out) throws SpRuntimeException {
+    System.out.println(state.count);
     event.addField("counter", ++state.count);
     out.collect(event);
   }

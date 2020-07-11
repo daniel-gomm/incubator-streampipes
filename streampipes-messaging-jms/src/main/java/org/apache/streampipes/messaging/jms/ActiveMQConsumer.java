@@ -88,18 +88,19 @@ public class ActiveMQConsumer extends ActiveMQConnectionProvider implements
     return connected;
   }
 
-  //My code
 
+  //My code
   @Override
-  public Long getOffset() throws SpRuntimeException {
+  public String getConsumerState(boolean close) throws SpRuntimeException {
     //TODO
     return null;
   }
 
   @Override
-  public void setOffset(Long offset) throws SpRuntimeException {
+  public void setConsumerState(String state) throws SpRuntimeException {
   //TODO
   }
+
 
   //End of my code
 

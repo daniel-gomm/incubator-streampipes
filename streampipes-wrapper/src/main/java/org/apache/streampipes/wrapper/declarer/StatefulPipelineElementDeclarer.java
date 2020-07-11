@@ -2,6 +2,7 @@ package org.apache.streampipes.wrapper.declarer;
 
 import org.apache.streampipes.model.Response;
 import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
+import org.apache.streampipes.model.state.PipelineElementState;
 import org.apache.streampipes.sdk.extractor.AbstractParameterExtractor;
 import org.apache.streampipes.wrapper.params.binding.BindingParams;
 import org.apache.streampipes.wrapper.runtime.StatefulPipelineElementRuntime;
@@ -33,6 +34,20 @@ public abstract class StatefulPipelineElementDeclarer<B extends BindingParams, E
         try{
             return new Response(elementId, true, epRuntime.discardWithState());
         }catch(Exception e){
+            e.printStackTrace();
+            return new Response(elementId, false, e.getMessage());
+        }
+    }
+
+    public Response invokeStatefulEPRuntime(I graph,PipelineElementState state){
+        try{
+            elementId = graph.getElementId();
+            // change to getRuntime(graph, extractor)
+            epRuntime = getRuntime(graph, getExtractor(graph));
+            epRuntime.bindWithState(state);
+            return new Response(elementId, true, "Successfully initiated with state");
+        }
+        catch (Exception e){
             e.printStackTrace();
             return new Response(elementId, false, e.getMessage());
         }

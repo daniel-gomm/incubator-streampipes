@@ -91,6 +91,7 @@ public class HttpRequestBuilder {
   public PipelineElementStatus detach() {
     try {
       Response httpResp = Request.Delete(belongsTo).connectTimeout(10000).execute();
+      System.out.println(this.belongsTo);
       return handleResponse(httpResp);
     } catch (Exception e) {
       LOG.error("Could not stop pipeline " + belongsTo, e.getMessage());
@@ -124,7 +125,6 @@ public class HttpRequestBuilder {
   }
 
 
-  //Noch nicht an irgendwas angebunden
   public PipelineElementStatus invoke(PipelineElementState state) {
     LOG.info("Invoking element: " + belongsTo);
     try {

@@ -161,7 +161,7 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
 
     //My code
     @Path("/{pipelineId}/migrate")  //Adjust
-    @GET
+    @PUT
     @Produces(MediaType.APPLICATION_JSON)
     @GsonWithIds
     public Response migrate(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId, String nodes){

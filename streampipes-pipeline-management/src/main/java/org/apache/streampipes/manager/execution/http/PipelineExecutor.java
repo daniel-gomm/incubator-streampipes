@@ -210,23 +210,24 @@ public class PipelineExecutor {
   }
 
 
+  private class Nodes{
+    String oldNode;
+    String newNode;
+  }
+
   public PipelineOperationStatus migrate(String nodes){
     List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
     List<SpDataSet> dataSets = TemporaryGraphStorage.datasetStorage.get(pipeline.getPipelineId());
 
     Gson gson = new Gson();
 
-    class Nodes{
-      String oldNode;
-      String newNode;
-    }
-
     Nodes node = gson.fromJson(nodes, Nodes.class);
+
     //Stop and get states
     Map<String, PipelineElementState> states = new GraphSubmitter(pipeline.getPipelineId(),
             pipeline.getName(), graphs, dataSets).detachGraphsGetState();
 
-    if (states != null) {
+    if (!states.isEmpty()) {
       PipelineStatusManager.addPipelineStatus(pipeline.getPipelineId(),
               new PipelineStatusMessage(pipeline.getPipelineId(),
                       System.currentTimeMillis(),
@@ -240,12 +241,13 @@ public class PipelineExecutor {
       if (sepa.getElementId().equals(node.oldNode)){
         foundElement = true;
         sepa.setElementId(node.newNode);
+        sepa.setBelongsTo(node.newNode.replaceAll(node.newNode.split("/")[node.newNode.split("/").length-1], ""));
+        sepa.setBelongsTo(node.newNode.substring(0, node.newNode.lastIndexOf("/")));
+        sepa.getCategory();
       };
     }
+
     //Start with received states
-
-
-
     List<DataProcessorInvocation> sepas = pipeline.getSepas();
     List<DataSinkInvocation> secs = pipeline.getActions();
     dataSets = pipeline.getStreams().stream().filter(s -> s instanceof SpDataSet).map(s -> new

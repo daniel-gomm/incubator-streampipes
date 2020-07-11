@@ -43,7 +43,8 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
   private String topic;
   private InternalEventProcessor<byte[]> eventProcessor;
   private KafkaTransportProtocol protocol;
-  private boolean isRunning;
+  private volatile boolean isRunning;
+  private volatile boolean isFinished = false;
   private Boolean patternTopic = false;
 
   //My code
@@ -113,23 +114,27 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
     //My code
     if (this.offset !=  null){
       //If an offset has been provided seek the offset to pick up processing from there
-      kafkaConsumer.seek(new TopicPartition(topic, 0), offset);
+      //kafkaConsumer.seek(new TopicPartition(topic, 0), offset);
     }
     //End of my code
     while (isRunning) {
       ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(100);
       for (ConsumerRecord<String, byte[]> record : records) {
-        eventProcessor.onEvent(record.value());
+        byte[] rec = record.value();
+        eventProcessor.onEvent(rec);
         //My code
         //save the offset each time an event is processed
         this.offset = record.offset();
         //End of my code
       }
     }
+    this.isFinished = true;
     LOG.info("Closing Kafka Consumer.");
     kafkaConsumer.close();
     //My code
-    notify();
+    synchronized (this){
+      notifyAll();
+    }
     //End of my code
   }
 
@@ -163,6 +168,14 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
   public void disconnect() throws SpRuntimeException {
     LOG.info("Kafka consumer: Disconnecting from " + topic);
     this.isRunning = false;
+    synchronized (this){
+      try {
+        wait();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+        System.out.println("Here we are");
+      }
+    }
   }
 
   @Override
@@ -177,13 +190,16 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
     if (close)
       try{
         close();
-        return "GroupId:" + this.groupId;
-      }catch (Exception e){}
-    return "Offset:" + offset;
+        return "\"GroupId:\"" + this.groupId;
+      }catch (Exception e){
+        e.printStackTrace();
+      }
+    return "\"Offset:\"" + offset;
   }
 
   @Override
   public void setConsumerState(String state) throws SpRuntimeException {
+    System.out.println("Kafka consumer" + state);
     if (state.startsWith("GroupId:")){
       state = state.replaceFirst("GroupId:", "");
       this.groupId = state;
@@ -201,9 +217,17 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
 
   private void close() throws SpRuntimeException{
     disconnect();
-    try{
-      wait();
-    }catch (InterruptedException ie){/**Unhandled rn**/}
+    synchronized (this){
+      try {
+        if (!this.isFinished){
+          System.out.println("Waiting...");
+          wait();
+          System.out.println("Done waiting");
+        }
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   //End of my code

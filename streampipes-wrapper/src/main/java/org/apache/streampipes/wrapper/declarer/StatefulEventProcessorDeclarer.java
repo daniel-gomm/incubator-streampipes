@@ -2,8 +2,10 @@ package org.apache.streampipes.wrapper.declarer;
 
 import org.apache.streampipes.container.declarer.StatefulInvocableDeclarer;
 import org.apache.streampipes.model.Response;
+import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
 import org.apache.streampipes.model.graph.DataProcessorDescription;
 import org.apache.streampipes.model.graph.DataProcessorInvocation;
+import org.apache.streampipes.model.state.PipelineElementState;
 import org.apache.streampipes.sdk.extractor.ProcessingElementParameterExtractor;
 import org.apache.streampipes.wrapper.params.binding.EventProcessorBindingParams;
 import org.apache.streampipes.wrapper.runtime.StatefulPipelineElementRuntime;
@@ -22,9 +24,12 @@ public abstract class StatefulEventProcessorDeclarer<B extends EventProcessorBin
     }
 
     @Override
+    public Response invokeStatefulRuntime(DataProcessorInvocation graph, PipelineElementState state) {
+        return invokeStatefulEPRuntime(graph, state);
+    }
+
+    @Override
     public Response invokeRuntime(DataProcessorInvocation graph) {
         return invokeEPRuntime(graph);
     }
-
-
 }

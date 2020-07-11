@@ -120,7 +120,7 @@ public class GraphSubmitter {
 
     for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ){
       InvocableStreamPipesEntity spe = iter.next();
-      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getUri() + "state").detach();
+      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getUri() + "/state").detachAndGetState();
       status.addPipelineElementStatus(resp);
       if (resp.isSuccess()) {
         states.put(spe.getBelongsTo(), gson.fromJson(resp.getOptionalMessage(), PipelineElementState.class));
@@ -148,10 +148,15 @@ public class GraphSubmitter {
 
     for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ) {
       InvocableStreamPipesEntity spe = iter.next();
-      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getUri() + "state").invoke(states.get(spe.getBelongsTo()));
+      PipelineElementStatus resp = null;
+      if(states.containsKey(spe.getBelongsTo())){
+        resp = new HttpRequestBuilder(spe, spe.getBelongsTo()).invoke(states.get(spe.getBelongsTo()));
+      } else{
+        //If no state is availible start regularly
+        resp = new HttpRequestBuilder(spe, spe.getBelongsTo()).invoke();
+      }
       status.addPipelineElementStatus(resp);
     }
-
 
     if (status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess)) {
       dataSets.forEach(dataSet ->

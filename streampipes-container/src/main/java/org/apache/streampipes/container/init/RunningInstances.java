@@ -45,14 +45,11 @@ public enum RunningInstances {
 
     public InvocableDeclarer getInvocation(String id) {
         ElementInfo<NamedStreamPipesEntity, InvocableDeclarer> result = runningInstances.get(id);
-        //My code
-        if (result.getInvocation() instanceof StatefulInvocableDeclarer){
-            return (StatefulInvocableDeclarer) result.getInvocation();
-        } //end of my code
-        else if (result != null) {
-            return result.getInvocation();
-        } else {
+        if (result == null) {
             return null;
+        }
+        else{
+            return result.getInvocation();
         }
     }
 

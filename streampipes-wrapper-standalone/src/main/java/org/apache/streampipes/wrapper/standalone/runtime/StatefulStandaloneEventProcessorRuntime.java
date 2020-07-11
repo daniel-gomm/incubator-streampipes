@@ -32,6 +32,8 @@ import org.apache.streampipes.wrapper.standalone.manager.ProtocolManager;
 import org.apache.streampipes.wrapper.standalone.routing.StandaloneSpInputCollector;
 import org.eclipse.rdf4j.query.algebra.Str;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -96,17 +98,15 @@ public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBin
 
     //My code
 
-    public void bindWithState(String state) throws SpRuntimeException {
-        Gson gson = new Gson();
-        PipelineElementState elementState = gson.fromJson(state, PipelineElementState.class);
+    public void bindWithState(PipelineElementState state) throws SpRuntimeException {
         bindEngine();
-        setState(elementState.state);
+        setState(state.state);
         getInputCollectors().forEach(is -> is.registerConsumer(instanceId, this));
         int i = 0;
         for (SpInputCollector spInputCollector : getInputCollectors()) {
             if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
                 StandaloneSpInputCollector inputCollector = (StandaloneSpInputCollector) spInputCollector;
-                inputCollector.setConsumerState((String) elementState.consumerState.get(i++));
+                inputCollector.setConsumerState((String) state.consumerState.get(i++));
             }
         }
         prepareRuntime();
@@ -115,12 +115,13 @@ public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBin
     public String discardWithState() throws SpRuntimeException{
         PipelineElementState state = new PipelineElementState();
         state.state = engine.getState();
-        discardEngine();
+        state.consumerState = new ArrayList();
         for (SpInputCollector spInputCollector : getInputCollectors()) {
             if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
                 state.consumerState.add(((StandaloneSpInputCollector) spInputCollector).getConsumerState(true));
             }
         }
+        discardEngine();
         //Reihenfolge vertauscht (zurück tauschen?? sollte zu fehlern führen so wie es jetzt ist)
         getInputCollectors().forEach(is -> is.unregisterConsumer(instanceId));
         //postDiscard(); sollte nicht mehr nötig sein
