@@ -136,19 +136,14 @@ public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBin
     public String getState() throws SpRuntimeException {
         PipelineElementState state = new PipelineElementState();
         state.consumerState = new ArrayList();
-
+        pause();
         for (SpInputCollector spInputCollector : getInputCollectors()) {
             if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
-                ((StandaloneSpInputCollector) spInputCollector).pauseConsumer();
                 state.consumerState.add(((StandaloneSpInputCollector) spInputCollector).getConsumerState(false));
             }
         }
         state.state = engine.getState();
-        for (SpInputCollector spInputCollector : getInputCollectors()) {
-            if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
-                ((StandaloneSpInputCollector) spInputCollector).resumeConsumer();
-            }
-        }
+        resume();
         Gson gson = new Gson();
         System.out.println("State: " + state);
         return gson.toJson(state);
@@ -162,6 +157,24 @@ public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBin
             ((StandaloneSpInputCollector) spInputCollector).setConsumerState((String) peState.consumerState.get(i++));
         }
         engine.setState(peState.state);
+    }
+
+    @Override
+    public void pause() throws SpRuntimeException {
+        for (SpInputCollector spInputCollector : getInputCollectors()) {
+            if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+                ((StandaloneSpInputCollector) spInputCollector).pauseConsumer();
+            }
+        }
+    }
+
+    @Override
+    public void resume() throws SpRuntimeException {
+        for (SpInputCollector spInputCollector : getInputCollectors()) {
+            if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+                ((StandaloneSpInputCollector) spInputCollector).resumeConsumer();
+            }
+        }
     }
 
     //end of my code

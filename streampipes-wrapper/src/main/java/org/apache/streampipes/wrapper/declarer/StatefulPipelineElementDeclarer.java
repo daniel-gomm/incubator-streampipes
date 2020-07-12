@@ -30,6 +30,27 @@ public abstract class StatefulPipelineElementDeclarer<B extends BindingParams, E
         }
     }
 
+    public Response pause(){
+        try{
+            epRuntime.pause();
+            return new Response(elementId, true);
+        }catch(Exception e){
+            e.printStackTrace();
+            return new Response(elementId, false, e.getMessage());
+        }
+    }
+
+    public Response resume(){
+        try{
+            epRuntime.resume();
+            return new Response(elementId, true);
+        }catch(Exception e){
+            e.printStackTrace();
+            return new Response(elementId, false, e.getMessage());
+        }
+    }
+
+
     public Response detachRuntimeAndGetState(){
         try{
             return new Response(elementId, true, epRuntime.discardWithState());

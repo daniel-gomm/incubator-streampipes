@@ -211,8 +211,6 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     public String stopAndGetState(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
         StatefulInvocableDeclarer runningInstance = RunningInstances.INSTANCE.getStatefulInvocation(runningInstanceId);
 
-
-
         if (runningInstance != null) {
             Response resp = runningInstance.detachRuntimeAndGetState();
 
@@ -235,6 +233,25 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
 
         //return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
     }
+
+    @GET
+    @Path("{elementId}/{runningInstanceId}/pause")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String pauseElement(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
+        StatefulInvocableDeclarer runningInstance = RunningInstances.INSTANCE.getStatefulInvocation(runningInstanceId);
+        return Util.toResponseString(runningInstance.pause());
+    }
+
+    @GET
+    @Path("{elementId}/{runningInstanceId}/resume")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String resumeElement(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
+        StatefulInvocableDeclarer runningInstance = RunningInstances.INSTANCE.getStatefulInvocation(runningInstanceId);
+        return Util.toResponseString(runningInstance.resume());
+    }
+
+
+
     //End of my code
 
 

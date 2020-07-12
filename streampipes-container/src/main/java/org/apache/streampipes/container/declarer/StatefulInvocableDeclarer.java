@@ -16,4 +16,8 @@ public interface StatefulInvocableDeclarer extends SemanticEventProcessingAgentD
 
     Response invokeStatefulRuntime(DataProcessorInvocation graph, PipelineElementState state);
 
+    Response pause();
+
+    Response resume();
+
 }
