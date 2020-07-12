@@ -94,7 +94,7 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
       this.groupId = props.get(ConsumerConfig.GROUP_ID_CONFIG).toString();
     }
     //End of my code
-    KafkaConsumer<String, byte[]> kafkaConsumer = new KafkaConsumer<>(getProperties());
+    KafkaConsumer<String, byte[]> kafkaConsumer = new KafkaConsumer<>(props);
     if (!patternTopic) {
       kafkaConsumer.subscribe(Collections.singletonList(topic));
     } else {
@@ -199,13 +199,13 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
 
   @Override
   public void setConsumerState(String state) throws SpRuntimeException {
-    System.out.println("Kafka consumer" + state);
-    if (state.startsWith("GroupId:")){
-      state = state.replaceFirst("GroupId:", "");
+    System.out.println("\"Kafka consumer\"" + state);
+    if (state.startsWith("\"GroupId:\"")){
+      state = state.replaceFirst("\"GroupId:\"", "");
       this.groupId = state;
     }
-    else if (state.startsWith("Offset:")){
-      state = state.replaceFirst("Offset:", "");
+    else if (state.startsWith("\"Offset:\"")){
+      state = state.replaceFirst("\"Offset:\"", "");
       this.offset = Long.parseLong(state);
       this.protocol.setOffset(state);
     }

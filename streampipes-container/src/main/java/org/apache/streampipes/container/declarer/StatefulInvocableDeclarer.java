@@ -6,7 +6,7 @@ import org.apache.streampipes.model.base.NamedStreamPipesEntity;
 import org.apache.streampipes.model.graph.DataProcessorInvocation;
 import org.apache.streampipes.model.state.PipelineElementState;
 
-public interface StatefulInvocableDeclarer<I extends InvocableStreamPipesEntity> extends SemanticEventProcessingAgentDeclarer {
+public interface StatefulInvocableDeclarer extends SemanticEventProcessingAgentDeclarer {
 
     Response getState();
 
