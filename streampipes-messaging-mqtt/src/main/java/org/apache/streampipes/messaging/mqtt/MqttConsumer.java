@@ -26,6 +26,10 @@ import org.fusesource.mqtt.client.Topic;
 
 public class MqttConsumer extends AbstractMqttConnector implements EventConsumer<MqttTransportProtocol> {
 
+  //My code
+  private volatile boolean threadSuspended = false;
+  //End of my code
+
   @Override
   public void connect(MqttTransportProtocol protocolSettings, InternalEventProcessor<byte[]> eventProcessor) throws SpRuntimeException {
     try {
@@ -38,6 +42,17 @@ public class MqttConsumer extends AbstractMqttConnector implements EventConsumer
         byte[] payload = message.getPayload();
         eventProcessor.onEvent(payload);
         message.ack();
+        //My code
+        synchronized (this) {
+          while (threadSuspended && connected) {
+            try {
+              wait();
+            } catch (InterruptedException e) {
+              e.printStackTrace();
+            }
+          }
+        }
+        //End of my code
       }
     } catch (Exception e) {
       throw new SpRuntimeException(e);
@@ -60,17 +75,25 @@ public class MqttConsumer extends AbstractMqttConnector implements EventConsumer
     return this.connected;
   }
 
-  //My code
 
+  //My code
   @Override
-  public Long getOffset(boolean close) throws SpRuntimeException {
-    //TODO
+  public String getConsumerState(boolean close) throws SpRuntimeException {
     return null;
   }
 
   @Override
-  public void setOffset(Long offset) throws SpRuntimeException {
-  //TODO
+  public void setConsumerState(String state) throws SpRuntimeException {
+
+  }
+
+  public void pause(){
+    this.threadSuspended = true;
+  }
+
+  public synchronized void resume(){
+    this.threadSuspended = false;
+    notify();
   }
 
   //End of my code

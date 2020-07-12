@@ -102,6 +102,12 @@ public class ActiveMQConsumer extends ActiveMQConnectionProvider implements
   }
 
 
+  public void pause(){
+  }
+
+  public synchronized void resume(){
+  }
+
   //End of my code
 
   @Override

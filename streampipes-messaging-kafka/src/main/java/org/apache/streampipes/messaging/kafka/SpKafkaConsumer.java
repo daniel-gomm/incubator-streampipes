@@ -50,7 +50,9 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
   //My code
 
   private Long offset;
+  private Long startOffset;
   private String groupId = null;
+  private volatile boolean threadSuspended = false;
 
   //End of my code
 
@@ -112,9 +114,9 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
       });
     }
     //My code
-    if (this.offset !=  null){
+    if (this.startOffset !=  null){
       //If an offset has been provided seek the offset to pick up processing from there
-      //kafkaConsumer.seek(new TopicPartition(topic, 0), offset);
+      kafkaConsumer.seek(new TopicPartition(topic, 0), startOffset);
     }
     //End of my code
     while (isRunning) {
@@ -125,6 +127,15 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
         //My code
         //save the offset each time an event is processed
         this.offset = record.offset();
+        synchronized (this){
+          while (threadSuspended && isRunning){
+            try {
+              wait();
+            } catch (InterruptedException e) {
+              e.printStackTrace();
+            }
+          }
+        }
         //End of my code
       }
     }
@@ -206,7 +217,7 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
     }
     else if (state.startsWith("\"Offset:\"")){
       state = state.replaceFirst("\"Offset:\"", "");
-      this.offset = Long.parseLong(state);
+      this.startOffset = Long.parseLong(state);
       this.protocol.setOffset(state);
     }
     else {
@@ -228,6 +239,16 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
         e.printStackTrace();
       }
     }
+  }
+
+
+  public void pause(){
+    this.threadSuspended = true;
+  }
+
+  public synchronized void resume(){
+    this.threadSuspended = false;
+    notify();
   }
 
   //End of my code

@@ -36,5 +36,9 @@ public interface EventConsumer<TP extends TransportProtocol> {
 
     void setConsumerState(String state) throws SpRuntimeException;
 
+    void pause();
+
+    void resume();
+
     //End of my code
 }
