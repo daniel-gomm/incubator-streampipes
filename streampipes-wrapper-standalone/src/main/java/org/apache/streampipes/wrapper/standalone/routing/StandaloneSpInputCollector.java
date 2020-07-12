@@ -89,5 +89,13 @@ public class StandaloneSpInputCollector<T extends TransportProtocol> extends
     protocolDefinition.getConsumer().setConsumerState(state);
   }
 
+  public void pauseConsumer(){
+    protocolDefinition.getConsumer().pause();
+  }
+
+  public void resumeConsumer(){
+    protocolDefinition.getConsumer().resume();
+  }
+
   //End of my code
 }

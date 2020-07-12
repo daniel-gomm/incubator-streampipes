@@ -27,6 +27,7 @@ import org.apache.streampipes.wrapper.params.binding.EventProcessorBindingParams
 import org.apache.streampipes.wrapper.params.runtime.EventProcessorRuntimeParams;
 import org.apache.streampipes.wrapper.routing.SpInputCollector;
 import org.apache.streampipes.wrapper.routing.SpOutputCollector;
+import org.apache.streampipes.wrapper.runtime.PipelineElement;
 import org.apache.streampipes.wrapper.runtime.StatefulEventProcessor;
 import org.apache.streampipes.wrapper.standalone.manager.ProtocolManager;
 import org.apache.streampipes.wrapper.standalone.routing.StandaloneSpInputCollector;
@@ -100,7 +101,7 @@ public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBin
 
     public void bindWithState(PipelineElementState state) throws SpRuntimeException {
         bindEngine();
-        setState(state.state);
+        engine.setState(state.state);
         getInputCollectors().forEach(is -> is.registerConsumer(instanceId, this));
         int i = 0;
         for (SpInputCollector spInputCollector : getInputCollectors()) {
@@ -121,6 +122,7 @@ public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBin
                 state.consumerState.add(((StandaloneSpInputCollector) spInputCollector).getConsumerState(true));
             }
         }
+        state.state = engine.getState();
         discardEngine();
         //Reihenfolge vertauscht (zurück tauschen?? sollte zu fehlern führen so wie es jetzt ist)
         getInputCollectors().forEach(is -> is.unregisterConsumer(instanceId));
@@ -132,21 +134,34 @@ public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBin
     }
 
     public String getState() throws SpRuntimeException {
-        String state = "";
+        PipelineElementState state = new PipelineElementState();
+        state.consumerState = new ArrayList();
 
         for (SpInputCollector spInputCollector : getInputCollectors()) {
             if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
-                StandaloneSpInputCollector inputCollector = (StandaloneSpInputCollector) spInputCollector;
-                state+=inputCollector.getConsumerState()+",\n";
+                ((StandaloneSpInputCollector) spInputCollector).pauseConsumer();
+                state.consumerState.add(((StandaloneSpInputCollector) spInputCollector).getConsumerState(false));
             }
         }
-        state = (state != "") ? state.substring(0, state.length()-2):state;
+        state.state = engine.getState();
+        for (SpInputCollector spInputCollector : getInputCollectors()) {
+            if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+                ((StandaloneSpInputCollector) spInputCollector).resumeConsumer();
+            }
+        }
+        Gson gson = new Gson();
         System.out.println("State: " + state);
-        return engine.getState();
+        return gson.toJson(state);
     }
 
     public void setState(String state) throws SpRuntimeException {
-        engine.setState(state);
+        Gson gson = new Gson();
+        PipelineElementState peState = gson.fromJson(state, PipelineElementState.class);
+        int i = 0;
+        for (SpInputCollector spInputCollector : getInputCollectors()){
+            ((StandaloneSpInputCollector) spInputCollector).setConsumerState((String) peState.consumerState.get(i++));
+        }
+        engine.setState(peState.state);
     }
 
     //end of my code
