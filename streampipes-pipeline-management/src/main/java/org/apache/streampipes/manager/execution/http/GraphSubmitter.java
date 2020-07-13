@@ -183,7 +183,7 @@ public class GraphSubmitter {
 
     for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ) {
       InvocableStreamPipesEntity spe = iter.next();
-      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getBelongsTo()).pause();
+      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getUri()).pause();
       status.addPipelineElementStatus(resp);
     }
 
@@ -207,7 +207,7 @@ public class GraphSubmitter {
 
     for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ) {
       InvocableStreamPipesEntity spe = iter.next();
-      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getBelongsTo()).resume();
+      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getUri()).resume();
       status.addPipelineElementStatus(resp);
     }
 

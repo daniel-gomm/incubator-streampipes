@@ -239,6 +239,9 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Produces(MediaType.APPLICATION_JSON)
     public String pauseElement(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
         StatefulInvocableDeclarer runningInstance = RunningInstances.INSTANCE.getStatefulInvocation(runningInstanceId);
+        if (runningInstance == null){
+            return Util.toResponseString(elementId, false, "Could not find the running stateful instance with id: " + runningInstanceId);
+        }
         return Util.toResponseString(runningInstance.pause());
     }
 
@@ -247,6 +250,9 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Produces(MediaType.APPLICATION_JSON)
     public String resumeElement(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
         StatefulInvocableDeclarer runningInstance = RunningInstances.INSTANCE.getStatefulInvocation(runningInstanceId);
+        if (runningInstance == null){
+            return Util.toResponseString(elementId, false, "Could not find the running stateful instance with id: " + runningInstanceId);
+        }
         return Util.toResponseString(runningInstance.resume());
     }
 

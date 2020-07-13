@@ -289,8 +289,8 @@ public class PipelineExecutor {
 
     Nodes node = gson.fromJson(nodes, Nodes.class);
 
-    DataProcessorInvocation migrateInvoc = new DataProcessorInvocation();
-    for (DataProcessorInvocation sepa : this.pipeline.getSepas()){
+    InvocableStreamPipesEntity migrateInvoc = new DataProcessorInvocation();
+    for (InvocableStreamPipesEntity sepa : graphs){
       if (sepa.getElementId().equals(node.oldNode)){
         migrateInvoc = sepa;
       };
@@ -322,7 +322,7 @@ public class PipelineExecutor {
     onlyMigrate.forEach(g -> g.setStreamRequirements(Arrays.asList()));
 
     PipelineOperationStatus statusInvoc = new GraphSubmitter(pipeline.getPipelineId(),
-            pipeline.getName(), decryptedGraphs, null)
+            pipeline.getName(), decryptedGraphs, new ArrayList<SpDataSet>())
             .invokeGraphs(states);
 
     if (statusInvoc.isSuccess()) {
@@ -334,7 +334,7 @@ public class PipelineExecutor {
 
     //Resume Pipeline Execution
     PipelineOperationStatus statusResume = new GraphSubmitter(pipeline.getPipelineId(),
-            pipeline.getName(), graphs, dataSets).pause();
+            pipeline.getName(), graphs, dataSets).resume();
 
     return statusInvoc;
   }
