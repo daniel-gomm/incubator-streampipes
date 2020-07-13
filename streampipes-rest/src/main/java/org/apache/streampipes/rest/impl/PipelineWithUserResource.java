@@ -178,6 +178,24 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
     }
 
 
+    @Path("/{pipelineId}/migratePR")  //Adjust
+    @PUT
+    @Produces(MediaType.APPLICATION_JSON)
+    @GsonWithIds
+    public Response migratePR(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId, String nodes){
+        //Implement
+        try{
+            Pipeline pipeline = getPipelineStorage()
+                    .getPipeline(pipelineId);
+            PipelineOperationStatus status = Operations.migratePR(pipeline, nodes);
+            return ok(status);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return statusMessage(Notifications.error(NotificationType.UNKNOWN_ERROR));
+    }
+
+
     @Path("/{pipelineId}/{pipelineElement}/state")
     @GET
     @Produces(MediaType.APPLICATION_JSON)

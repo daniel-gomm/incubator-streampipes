@@ -149,6 +149,26 @@ public class HttpRequestBuilder {
     }
   }
 
-  //End of my code
+    public PipelineElementStatus pause() {
+      try {
+        Response httpResp = Request.Get(belongsTo + "/pause").connectTimeout(10000).execute();
+        return handleResponse(httpResp);
+      } catch (Exception e) {
+        LOG.error("Could not pause pipeline " + belongsTo, e.getMessage());
+        return null;
+      }
+    }
+
+    public PipelineElementStatus resume(){
+      try {
+        Response httpResp = Request.Get(belongsTo+ "/resume").connectTimeout(10000).execute();
+        return handleResponse(httpResp);
+      } catch (Exception e) {
+        LOG.error("Could not resume pipeline " + belongsTo, e.getMessage());
+        return null;
+      }
+    }
+
+    //End of my code
 
 }

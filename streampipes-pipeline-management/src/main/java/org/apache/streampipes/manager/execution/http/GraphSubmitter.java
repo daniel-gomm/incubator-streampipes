@@ -174,6 +174,54 @@ public class GraphSubmitter {
     }
     return status;
   }
+
+  public PipelineOperationStatus pause(){
+    PipelineOperationStatus status = new PipelineOperationStatus();
+    status.setPipelineId(pipelineId);
+    status.setPipelineName(pipelineName);
+
+
+    for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ) {
+      InvocableStreamPipesEntity spe = iter.next();
+      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getBelongsTo()).pause();
+      status.addPipelineElementStatus(resp);
+    }
+
+    status.setSuccess(status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess));
+
+    if (status.isSuccess()) {
+      status.setTitle("Pipeline " + pipelineName + " successfully paused");
+    } else {
+      LOG.info("Could not pause pipeline.");
+      status.setTitle("Could not pause pipeline" + pipelineName + ".");
+    }
+    return status;
+  }
+
+
+  public PipelineOperationStatus resume(){
+    PipelineOperationStatus status = new PipelineOperationStatus();
+    status.setPipelineId(pipelineId);
+    status.setPipelineName(pipelineName);
+
+
+    for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ) {
+      InvocableStreamPipesEntity spe = iter.next();
+      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getBelongsTo()).resume();
+      status.addPipelineElementStatus(resp);
+    }
+
+    status.setSuccess(status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess));
+
+    if (status.isSuccess()) {
+      status.setTitle("Pipeline " + pipelineName + " successfully paused");
+    } else {
+      LOG.info("Could not pause pipeline.");
+      status.setTitle("Could not pause pipeline" + pipelineName + ".");
+    }
+    return status;
+  }
+
   //End of my code
 
 }

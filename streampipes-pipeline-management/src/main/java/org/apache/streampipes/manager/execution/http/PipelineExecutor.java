@@ -281,6 +281,65 @@ public class PipelineExecutor {
   }
 
 
+  public PipelineOperationStatus migratePR(String nodes){
+    List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
+    List<SpDataSet> dataSets = TemporaryGraphStorage.datasetStorage.get(pipeline.getPipelineId());
+
+    Gson gson = new Gson();
+
+    Nodes node = gson.fromJson(nodes, Nodes.class);
+
+    DataProcessorInvocation migrateInvoc = new DataProcessorInvocation();
+    for (DataProcessorInvocation sepa : this.pipeline.getSepas()){
+      if (sepa.getElementId().equals(node.oldNode)){
+        migrateInvoc = sepa;
+      };
+    }
+
+    graphs.remove(migrateInvoc);
+    ArrayList<InvocableStreamPipesEntity> onlyMigrate = new ArrayList<InvocableStreamPipesEntity>();
+    onlyMigrate.add(migrateInvoc);
+
+    PipelineOperationStatus status = new GraphSubmitter(pipeline.getPipelineId(),
+            pipeline.getName(), graphs, dataSets).pause();
+
+    //Stop and get state of Element that is to be migrated
+    Map<String, PipelineElementState> states = new GraphSubmitter(pipeline.getPipelineId(),
+            pipeline.getName(), onlyMigrate, dataSets).detachGraphsGetState();
+
+    //Change pipeline description
+    for (DataProcessorInvocation sepa : this.pipeline.getSepas()){
+      if (sepa.getElementId().equals(node.oldNode)){
+        sepa.setElementId(node.newNode);
+        sepa.setBelongsTo(node.newNode.replaceAll(node.newNode.split("/")[node.newNode.split("/").length-1], ""));
+        sepa.setBelongsTo(node.newNode.substring(0, node.newNode.lastIndexOf("/")));
+      };
+    }
+
+    //Start PE with received states
+    List<InvocableStreamPipesEntity> decryptedGraphs = decryptSecrets(onlyMigrate);
+
+    onlyMigrate.forEach(g -> g.setStreamRequirements(Arrays.asList()));
+
+    PipelineOperationStatus statusInvoc = new GraphSubmitter(pipeline.getPipelineId(),
+            pipeline.getName(), decryptedGraphs, null)
+            .invokeGraphs(states);
+
+    if (statusInvoc.isSuccess()) {
+      storeInvocationGraphs(pipeline.getPipelineId(), graphs, dataSets);
+
+      PipelineStatusManager.addPipelineStatus(pipeline.getPipelineId(),
+              new PipelineStatusMessage(pipeline.getPipelineId(), System.currentTimeMillis(), PipelineStatusMessageType.PIPELINE_STARTED.title(), PipelineStatusMessageType.PIPELINE_STARTED.description()));
+    }
+
+    //Resume Pipeline Execution
+    PipelineOperationStatus statusResume = new GraphSubmitter(pipeline.getPipelineId(),
+            pipeline.getName(), graphs, dataSets).pause();
+
+    return statusInvoc;
+  }
+
+
   //End of my code
 
   private void setPipelineStarted(Pipeline pipeline) {
