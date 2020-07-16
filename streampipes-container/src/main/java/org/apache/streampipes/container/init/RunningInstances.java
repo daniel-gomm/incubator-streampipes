@@ -38,7 +38,6 @@ public enum RunningInstances {
         //My code
         if (invocation instanceof StatefulInvocableDeclarer){
             addStateful(id, description, (StatefulInvocableDeclarer) invocation);
-            System.out.println("Added stateful");
         }//end of my code
 
     }
@@ -55,7 +54,7 @@ public enum RunningInstances {
 
     //My code
 
-    public void addStateful(String id, NamedStreamPipesEntity description, StatefulInvocableDeclarer invocation){
+    private void addStateful(String id, NamedStreamPipesEntity description, StatefulInvocableDeclarer invocation){
         runningStatefulInstances.put(id, new ElementInfo<>(description, invocation));
     }
 

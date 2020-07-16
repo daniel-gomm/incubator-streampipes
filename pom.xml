@@ -867,8 +867,8 @@
         <module>streampipes-container-base</module>
         <module>streampipes-messaging-mqtt</module>
         <module>streampipes-maven-plugin</module>
-        <module>ExampleProcessors</module>
         <module>StatefulExamples</module>
+        <module>streampipes-state-db</module>
     </modules>
 
     <profiles>
