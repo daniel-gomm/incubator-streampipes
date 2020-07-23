@@ -1,8 +1,7 @@
-package org.apache.streampipes.statedb.rest;
+package org.apache.streampipes.rest.statedb;
 
 import com.google.gson.Gson;
-import org.apache.streampipes.statedb.database.DataBaseInstances;
-import org.apache.streampipes.statedb.database.PeStateDataBase;
+import org.apache.streampipes.model.Response;
 import org.apache.streampipes.model.state.PipelineElementState;
 
 import javax.ws.rs.*;
@@ -16,13 +15,17 @@ public class StateDB {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public String addState(@PathParam("elementId") String elementId, String payload){
-        //TODO Doesn't return anything right now
         PeStateDataBase db = DataBaseInstances.INSTANCE.getDataBase(elementId);
-        if(db == null){
-            db = DataBaseInstances.INSTANCE.add(elementId, new PeStateDataBase(elementId));
+        try {
+            if (db == null) {
+                db = DataBaseInstances.INSTANCE.add(elementId, new PeStateDataBase(elementId));
+            }
+            String id = elementId + "-" + System.currentTimeMillis();
+            db.save(id, payload);
+            return new Response(elementId, true, id).toString();
+        }catch(Exception e){
+            return new Response(elementId, false, e.getMessage()).toString();
         }
-        db.save(elementId + "-" + System.currentTimeMillis(), payload);
-        return null;
     }
 
 
@@ -32,10 +35,13 @@ public class StateDB {
     public String getLastState(@PathParam("elementId") String elementId){
         PeStateDataBase db = DataBaseInstances.INSTANCE.getDataBase(elementId);
         if(db == null){
-            //Not found
-            return null;
+            return new Response(elementId, false, "Database not found.").toString();
         }
-        return db.find(db.getLastAdded());
+        try {
+            return new Response(elementId, true, db.getLastAdded()).toString();
+        } catch(Exception e){
+            return new Response(elementId, false, e.getMessage()).toString();
+        }
     }
 
     @GET
@@ -45,9 +51,13 @@ public class StateDB {
         PeStateDataBase db = DataBaseInstances.INSTANCE.getDataBase(elementId);
         if(db == null){
             //Not found
-            return null;
+            return new Response(elementId, false, "Database not found.").toString();
         }
-        return db.find(stateId);
+        try {
+            return new Response(elementId, true, db.find(stateId)).toString();
+        } catch(Exception e){
+            return new Response(elementId, false, e.getMessage()).toString();
+        }
     }
 
 
@@ -56,33 +66,45 @@ public class StateDB {
     @Produces(MediaType.APPLICATION_JSON)
     public String removeDB(@PathParam("elementId") String elementId){
         if (DataBaseInstances.INSTANCE.remove(elementId)){
-            return null;
+            return new Response(elementId, true).toString();
         }else{
-            return null;
+            return new Response(elementId, false).toString();
         }
     }
 
-    @POST
+    @GET
     @Path("/close")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public String closeDB(){
-        //TODO
         if (DataBaseInstances.INSTANCE.closeDataBases()){
-
+            return new Response("statedb", true).toString();
         }else{
-
+            return new Response("statedb", false).toString();
         }
-        return null;
     }
 
-    @POST
+    @GET
     @Path("/open")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public String openDB(){
-        //TODO load dabase from close state
-        return null;
+        try{
+            DataBaseInstances.INSTANCE.openDataBases();
+            return new Response("open statedb", true).toString();
+        }catch (Exception e){
+            return new Response("open statedb", false, e.getMessage()).toString();
+        }
+    }
+
+    //Just for debugging purposes
+    @GET
+    @Path("/{elementId}/seek")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String seek(@PathParam("elementId") String elementId){
+        PeStateDataBase db = DataBaseInstances.INSTANCE.getDataBase(elementId);
+        db.seek();
+        return new Response("seek statedb", true).toString();
     }
 
 

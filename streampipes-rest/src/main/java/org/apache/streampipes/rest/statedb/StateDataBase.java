@@ -1,4 +1,4 @@
-package org.apache.streampipes.statedb.database;
+package org.apache.streampipes.rest.statedb;
 
 public interface StateDataBase extends KeyValueRepository<String, String> {
 

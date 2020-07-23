@@ -1,4 +1,4 @@
-package org.apache.streampipes.rest;
+package org.apache.streampipes.rest.statedb;
 
 public interface KeyValueRepository<K, V> {
     void save(K key, V value);
