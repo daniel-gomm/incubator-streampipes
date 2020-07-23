@@ -18,6 +18,7 @@
 
 package org.apache.streampipes.backend;
 
+import org.apache.streampipes.rest.StateDB;
 import org.apache.streampipes.rest.impl.ApplicationLink;
 import org.apache.streampipes.rest.impl.AssetDashboard;
 import org.apache.streampipes.rest.impl.Authentication;
@@ -131,6 +132,9 @@ public class StreamPipesResourceConfig extends ResourceConfig {
     register(VirtualSensor.class);
     register(Visualization.class);
     register(VisualizablePipeline.class);
+
+    //StateDB
+    register(StateDB.class);
 
     // Serializers
     register(GsonWithIdProvider.class);

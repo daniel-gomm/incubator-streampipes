@@ -760,6 +760,12 @@
                 <artifactId>siddhi-query-compiler</artifactId>
                 <version>${siddhi.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.rocksdb</groupId>
+                <artifactId>rocksdbjni</artifactId>
+                <version>6.10.2</version>
+            </dependency>
+            
 
             <!-- Test dependencies -->
             <dependency>
@@ -866,9 +872,9 @@
         <module>streampipes-connect-container-worker</module>
         <module>streampipes-container-base</module>
         <module>streampipes-messaging-mqtt</module>
-        <module>streampipes-maven-plugin</module>
         <module>StatefulExamples</module>
         <module>streampipes-state-db</module>
+        <module>streampipes-maven-plugin</module>
     </modules>
 
     <profiles>
