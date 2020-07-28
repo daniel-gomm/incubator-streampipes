@@ -110,6 +110,36 @@ public class GraphSubmitter {
 
   //My code
 
+  public Map<String, PipelineElementState> getStates(){
+    Map<String, PipelineElementState> states = new HashMap<String, PipelineElementState>();
+    Gson gson = new Gson();
+
+    PipelineOperationStatus status = new PipelineOperationStatus();
+    status.setPipelineId(pipelineId);
+    status.setPipelineName(pipelineName);
+
+    for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ){
+      InvocableStreamPipesEntity spe = iter.next();
+      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getUri() + "/state").getState();
+      status.addPipelineElementStatus(resp);
+      if (resp.isSuccess()) {
+        states.put(spe.getElementId().split("/")[spe.getElementId().split("/").length-1], gson.fromJson(resp.getOptionalMessage(), PipelineElementState.class));
+      }
+      status.setSuccess(status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess));
+
+    }
+
+
+    if (status.isSuccess()) {
+      status.setTitle("State of " + pipelineName + " successfully obtained.");
+    } else {
+      status.setTitle("Could not get all states for " + pipelineName + ".");
+    }
+
+    return states;
+  }
+
+
   public Map<String, PipelineElementState> detachGraphsGetState(){
     Map<String, PipelineElementState> states = new HashMap<String, PipelineElementState>();
     Gson gson = new Gson();
@@ -123,7 +153,7 @@ public class GraphSubmitter {
       PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getUri() + "/state").detachAndGetState();
       status.addPipelineElementStatus(resp);
       if (resp.isSuccess()) {
-        states.put(spe.getBelongsTo(), gson.fromJson(resp.getOptionalMessage(), PipelineElementState.class));
+        states.put(spe.getElementId().split("/")[spe.getElementId().split("/").length-1], gson.fromJson(resp.getOptionalMessage(), PipelineElementState.class));
       }
       status.setSuccess(status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess));
 
@@ -149,8 +179,8 @@ public class GraphSubmitter {
     for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ) {
       InvocableStreamPipesEntity spe = iter.next();
       PipelineElementStatus resp = null;
-      if(states.containsKey(spe.getBelongsTo())){
-        resp = new HttpRequestBuilder(spe, spe.getBelongsTo()).invoke(states.get(spe.getBelongsTo()));
+      if(states.containsKey(spe.getElementId().split("/")[spe.getElementId().split("/").length-1])){
+        resp = new HttpRequestBuilder(spe, spe.getBelongsTo()).invoke(states.get(spe.getElementId().split("/")[spe.getElementId().split("/").length-1]));
       } else{
         //If no state is availible start regularly
         resp = new HttpRequestBuilder(spe, spe.getBelongsTo()).invoke();

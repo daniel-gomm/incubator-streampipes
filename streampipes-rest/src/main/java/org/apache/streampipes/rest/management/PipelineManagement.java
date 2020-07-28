@@ -41,28 +41,4 @@ public class PipelineManagement extends AbstractRestInterface {
         }
     }
 
-    //My code
-
-    public String getState(String pipelineId, String pipelineElement){
-        try {
-            Pipeline pipeline = getPipelineStorage().getPipeline(pipelineId);
-            return Operations.getState(pipeline, pipelineElement);
-        } catch
-        (Exception e) {
-            e.printStackTrace();
-            return "Failed in PipelineManagement" + e.getMessage();
-        }
-    }
-
-    public String setState(String pipelineId, String pipelineElement, String state){
-        try {
-            Pipeline pipeline = getPipelineStorage().getPipeline(pipelineId);
-            return Operations.setState(pipeline, pipelineElement, state);
-        } catch
-        (Exception e) {
-            e.printStackTrace();
-            return "Failed in PipelineManagement" + e.getMessage();
-        }
-    }
-
 }

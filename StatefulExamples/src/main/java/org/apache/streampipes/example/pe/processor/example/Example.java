@@ -28,18 +28,26 @@ import org.apache.streampipes.wrapper.routing.SpOutputCollector;
 import org.apache.streampipes.wrapper.runtime.EventProcessor;
 
 import org.apache.streampipes.wrapper.runtime.StatefulEventProcessor;
+import org.apache.streampipes.wrapper.state.StateHandler;
+import org.apache.streampipes.wrapper.state.annotations.StateObject;
 import org.slf4j.Logger;
 
-public class Example implements
+public class Example extends
         StatefulEventProcessor<ExampleParameters> {
 
   private static Logger LOG;
+  private ExampleState state = new ExampleState();
 
-  private CounterState state = new CounterState();
 
-  private class CounterState implements PipelineElementState {
-    public int count = 0;
+  //@StateObject
+  //public int counter;
+
+  public Example(){
+    super();
+    //this.counter = 0;
+    //this.stateHandler = new StateHandler(this);
   }
+
 
   @Override
   public void onInvocation(ExampleParameters parameters,
@@ -49,8 +57,8 @@ public class Example implements
 
   @Override
   public void onEvent(Event event, SpOutputCollector out) throws SpRuntimeException {
-    System.out.println(state.count);
-    event.addField("counter", ++state.count);
+    System.out.println(state.counter);
+    event.addField("counter", ++state.counter);
     out.collect(event);
   }
 
@@ -61,13 +69,11 @@ public class Example implements
 
   @Override
   public String getState() throws SpRuntimeException {
-    Gson gson = new Gson();
-    return gson.toJson(state);
+    return new Gson().toJson(this.state);
   }
 
   @Override
   public void setState(String state) throws SpRuntimeException {
-    Gson gson = new Gson();
-    this.state = gson.fromJson(state, CounterState.class);
+    this.state = new Gson().fromJson(state, ExampleState.class);
   }
 }

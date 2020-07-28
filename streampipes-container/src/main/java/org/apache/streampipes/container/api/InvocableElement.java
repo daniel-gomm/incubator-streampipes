@@ -72,7 +72,7 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
             Gson gson = new Gson();
             load = gson.fromJson(payload, StatefulPayload.class);
             payload = load.namedStreamPipesEntity;
-            if(load.namedStreamPipesEntity == null){
+            if(payload == null){
                 payload = originalPayload;
             }
         }catch (JsonSyntaxException e){
@@ -192,7 +192,7 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     }
 
     @PUT
-    @Path("{elementId}/{runningInstanceId}/state/{offset}")
+    @Path("{elementId}/{runningInstanceId}/state")
     @Consumes(MediaType.APPLICATION_JSON)
     public String setState(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId, String payload){
         StatefulInvocableDeclarer runningInstance = RunningInstances.INSTANCE.getStatefulInvocation(runningInstanceId);

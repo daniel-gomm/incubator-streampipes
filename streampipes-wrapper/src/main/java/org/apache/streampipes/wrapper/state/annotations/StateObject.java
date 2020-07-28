@@ -1,4 +1,4 @@
-package org.apache.streampipes.wrapper.annotations;
+package org.apache.streampipes.wrapper.state.annotations;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

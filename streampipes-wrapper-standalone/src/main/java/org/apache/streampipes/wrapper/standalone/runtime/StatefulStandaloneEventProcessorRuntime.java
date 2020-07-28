@@ -19,6 +19,7 @@
 package org.apache.streampipes.wrapper.standalone.runtime;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
 import org.apache.streampipes.model.graph.DataProcessorInvocation;
 import org.apache.streampipes.model.state.PipelineElementState;
@@ -101,6 +102,7 @@ public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBin
 
     public void bindWithState(PipelineElementState state) throws SpRuntimeException {
         bindEngine();
+        engine.onInvocation(params.getBindingParams(), getOutputCollector() , params.getRuntimeContext());
         engine.setState(state.state);
         getInputCollectors().forEach(is -> is.registerConsumer(instanceId, this));
         int i = 0;
@@ -126,32 +128,33 @@ public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBin
         discardEngine();
         //Reihenfolge vertauscht (zurück tauschen?? sollte zu fehlern führen so wie es jetzt ist)
         getInputCollectors().forEach(is -> is.unregisterConsumer(instanceId));
-        //postDiscard(); sollte nicht mehr nötig sein
+        postDiscard();
 
         //Serialize state of pe
-        Gson gson = new Gson();
-        return gson.toJson(state);
+        return new Gson().toJson(state);
     }
 
     public String getState() throws SpRuntimeException {
         PipelineElementState state = new PipelineElementState();
         state.consumerState = new ArrayList();
-        pause();
+        boolean alreadyPaused = ((StandaloneSpInputCollector) getInputCollectors().get(0)).isPaused();
+        if(!alreadyPaused){
+            pause();
+        }
         for (SpInputCollector spInputCollector : getInputCollectors()) {
             if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
                 state.consumerState.add(((StandaloneSpInputCollector) spInputCollector).getConsumerState(false));
             }
         }
         state.state = engine.getState();
-        resume();
-        Gson gson = new Gson();
-        System.out.println("State: " + state);
-        return gson.toJson(state);
+        if(!alreadyPaused){
+            resume();
+        }
+        return new Gson().toJson(state);
     }
 
     public void setState(String state) throws SpRuntimeException {
-        Gson gson = new Gson();
-        PipelineElementState peState = gson.fromJson(state, PipelineElementState.class);
+        PipelineElementState peState = new Gson().fromJson(state, PipelineElementState.class);
         int i = 0;
         for (SpInputCollector spInputCollector : getInputCollectors()){
             ((StandaloneSpInputCollector) spInputCollector).setConsumerState((String) peState.consumerState.get(i++));

@@ -160,6 +160,7 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
     }
 
     //My code
+    /**
     @Path("/{pipelineId}/migrate")  //Adjust
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
@@ -175,7 +176,7 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
             e.printStackTrace();
         }
         return statusMessage(Notifications.error(NotificationType.UNKNOWN_ERROR));
-    }
+    }**/
 
 
     @Path("/{pipelineId}/migratePR")
@@ -183,7 +184,6 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
     @Produces(MediaType.APPLICATION_JSON)
     @GsonWithIds
     public Response migratePR(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId, String nodes){
-        //Implement
         try{
             Pipeline pipeline = getPipelineStorage()
                     .getPipeline(pipelineId);
@@ -194,6 +194,25 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
         }
         return statusMessage(Notifications.error(NotificationType.UNKNOWN_ERROR));
     }
+
+    /**
+    @Path("/{pipelineId}/migratePR_stateDB")
+    @PUT
+    @Produces(MediaType.APPLICATION_JSON)
+    @GsonWithIds
+    public Response migratePR_stateDB(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId, String nodes){
+        //TODO: Implement full functionality
+        try{
+            Pipeline pipeline = getPipelineStorage()
+                    .getPipeline(pipelineId);
+            PipelineOperationStatus status = Operations.migratePR_stateDB(pipeline, nodes);
+            return ok(status);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return statusMessage(Notifications.error(NotificationType.UNKNOWN_ERROR));
+    }
+
 
 
     @Path("/{pipelineId}/{pipelineElement}/state")
@@ -213,7 +232,7 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
     public String setState(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId, @PathParam("pipelineElement") String pipelineElement, String state){
         PipelineManagement pm = new PipelineManagement();
         return pm.setState(pipelineId, pipelineElement, state);
-    }
+    }**/
 
 
     //End of my code

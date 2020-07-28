@@ -88,6 +88,8 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
   public void run() {
     //My code
     Properties props = getProperties();
+    props.replace("enable.auto.commit", "false");
+    props.remove("auto.commit.interval.ms");
     if (this.groupId != null){
       //If a groupId has been provided set it in the config
       props.replace(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
@@ -116,7 +118,8 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
     //My code
     if (this.startOffset !=  null){
       //If an offset has been provided seek the offset to pick up processing from there
-      kafkaConsumer.seek(new TopicPartition(topic, 0), startOffset);
+      this.protocol.setOffset(this.startOffset.toString());
+      //kafkaConsumer.seek(new TopicPartition(topic, 0), startOffset);
     }
     //End of my code
     while (isRunning) {
@@ -127,20 +130,24 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
         //My code
         //save the offset each time an event is processed
         this.offset = record.offset();
-        synchronized (this){
-          while (threadSuspended && isRunning){
-            try {
-              wait();
-            } catch (InterruptedException e) {
-              e.printStackTrace();
-            }
-          }
-        }
+        kafkaConsumer.commitAsync();
         //End of my code
       }
+      //My code -- check if paused, just paused after all records of last poll have been committed
+      synchronized (this){
+        while (threadSuspended && isRunning){
+          try {
+            wait();
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+      //End of my code
     }
     this.isFinished = true;
     LOG.info("Closing Kafka Consumer.");
+    kafkaConsumer.commitSync();
     kafkaConsumer.close();
     //My code
     synchronized (this){
@@ -180,11 +187,14 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
     LOG.info("Kafka consumer: Disconnecting from " + topic);
     this.isRunning = false;
     synchronized (this){
+      if (this.threadSuspended = true){
+        this.threadSuspended = false;
+        notify();
+      }
       try {
         wait();
       } catch (InterruptedException e) {
         e.printStackTrace();
-        System.out.println("Here we are");
       }
     }
   }
@@ -205,7 +215,8 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
       }catch (Exception e){
         e.printStackTrace();
       }
-    return "\"Offset:\"" + offset;
+    return "\"GroupId:\"" + this.groupId;
+    //return "\"Offset:\"" + offset;
   }
 
   @Override
@@ -218,7 +229,6 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
     else if (state.startsWith("\"Offset:\"")){
       state = state.replaceFirst("\"Offset:\"", "");
       this.startOffset = Long.parseLong(state);
-      this.protocol.setOffset(state);
     }
     else {
       throw new SpRuntimeException("Failed to restore Consumer state of Consumer with topic "+ this.topic);
@@ -249,6 +259,11 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
   public synchronized void resume(){
     this.threadSuspended = false;
     notify();
+  }
+
+  @Override
+  public boolean isPaused() {
+    return this.threadSuspended;
   }
 
   //End of my code

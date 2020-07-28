@@ -26,7 +26,6 @@ import org.apache.http.client.fluent.Response;
 import org.apache.http.entity.ContentType;
 import org.apache.streampipes.model.state.PipelineElementState;
 import org.apache.streampipes.model.state.StatefulPayload;
-import org.eclipse.rdf4j.query.algebra.Str;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.streampipes.commons.Utils;
@@ -50,14 +49,13 @@ public class HttpRequestBuilder {
 
   //My code
 
-  public String getState(){
+  public PipelineElementStatus getState(){
     try {
       Response httpResp = Request.Get(belongsTo).connectTimeout(10000).execute();
-      return httpResp.returnContent().asString();
+      return handleResponse(httpResp);
     } catch (Exception e) {
-      System.out.println(e.getMessage());
-      //LOG.error("Could not get State " + belongsTo, e.getMessage());
-      return "Failed in HttpRequestBuilder" + e.getMessage();
+      LOG.error("Could get state of " + belongsTo, e.getMessage());
+      return new PipelineElementStatus(belongsTo, payload.getName(), false, e.getMessage());
     }
   }
 
@@ -145,7 +143,7 @@ public class HttpRequestBuilder {
     } catch (Exception e) {
       //Adjust
       LOG.error("Could not stop pipeline " + belongsTo, e.getMessage());
-      return null;
+      return new PipelineElementStatus(belongsTo, payload.getName(), false, e.getMessage());
     }
   }
 

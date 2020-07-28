@@ -97,5 +97,9 @@ public class StandaloneSpInputCollector<T extends TransportProtocol> extends
     protocolDefinition.getConsumer().resume();
   }
 
+  public boolean isPaused(){
+    return protocolDefinition.getConsumer().isPaused();
+  }
+
   //End of my code
 }

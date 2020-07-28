@@ -153,7 +153,8 @@ public class ConsulSpConfig extends SpConfig implements Runnable {
         Optional<String> i = kvClient.getValueAsString(addSn(key));
         ConfigItem configItem = prepareConfigItem(valueType, description, configurationScope, isPassword);
         // TODO this check does not work
-        if (!i.isPresent()) {
+        //if (!i.isPresent()) {
+        if (true) {
             // Set the value of environment variable as default
             String envVariable = System.getenv(key);
             if (envVariable != null) {

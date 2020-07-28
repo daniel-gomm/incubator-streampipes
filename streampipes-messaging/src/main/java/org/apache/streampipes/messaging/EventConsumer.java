@@ -40,5 +40,7 @@ public interface EventConsumer<TP extends TransportProtocol> {
 
     void resume();
 
+    boolean isPaused();
+
     //End of my code
 }

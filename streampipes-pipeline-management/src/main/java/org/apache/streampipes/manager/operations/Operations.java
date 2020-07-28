@@ -151,17 +151,24 @@ public class Operations {
   }
 
   //My code
-
+  /**
   public static PipelineOperationStatus migrate(Pipeline pipeline, String nodes){
     PipelineExecutor pe = new PipelineExecutor(pipeline,true, true, true);
     new PipelineStorageService(pipeline).updatePipeline();
     return pe.migrate(nodes);
-  }
+  }**/
 
   public static PipelineOperationStatus migratePR(Pipeline pipeline, String nodes){
     PipelineExecutor pe = new PipelineExecutor(pipeline,true, true, true);
     new PipelineStorageService(pipeline).updatePipeline();
     return pe.migratePR(nodes);
+  }
+  /**
+  public static PipelineOperationStatus migratePR_stateDB(Pipeline pipeline, String nodes){
+    PipelineExecutor pe = new PipelineExecutor(pipeline,true, true, true);
+    PipelineOperationStatus status =  pe.migratePR_stateDB(nodes);
+    new PipelineStorageService(pipeline).updatePipeline();
+    return status;
   }
 
   public static String getState(Pipeline pipeline, String pipelineElement){
@@ -170,7 +177,7 @@ public class Operations {
 
   public static String setState(Pipeline pipeline, String pipelineElement, String state){
     return new PipelineExecutor(pipeline, true, true, true).setState(pipelineElement, state);
-  }
+  }**/
 
 
   //End of my code

@@ -96,6 +96,11 @@ public class MqttConsumer extends AbstractMqttConnector implements EventConsumer
     notify();
   }
 
+  @Override
+  public boolean isPaused() {
+    return false;
+  }
+
   //End of my code
 
 }
