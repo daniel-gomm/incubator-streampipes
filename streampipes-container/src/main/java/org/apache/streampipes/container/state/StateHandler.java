@@ -1,7 +1,7 @@
-package org.apache.streampipes.wrapper.state;
+package org.apache.streampipes.container.state;
 
 import com.google.gson.Gson;
-import org.apache.streampipes.wrapper.state.annotations.StateObject;
+import org.apache.streampipes.container.state.annotations.StateObject;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

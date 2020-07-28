@@ -17,6 +17,7 @@
  */
 package org.apache.streampipes.container.standalone.init;
 
+import org.apache.streampipes.container.state.database.StateDB;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.springframework.stereotype.Component;
 import org.apache.streampipes.container.api.Element;
@@ -38,5 +39,9 @@ public class PipelineElementContainerResourceConfig extends ResourceConfig {
     register(SepElement.class);
     register(WelcomePage.class);
     register(PipelineTemplateElement.class);
+
+    //My code
+    register(StateDB.class);
+    //End of my coed
   }
 }

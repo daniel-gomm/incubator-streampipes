@@ -23,13 +23,10 @@ import com.google.gson.Gson;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
 import org.apache.streampipes.model.runtime.Event;
 import org.apache.streampipes.wrapper.context.EventProcessorRuntimeContext;
-import org.apache.streampipes.wrapper.model.PipelineElementState;
 import org.apache.streampipes.wrapper.routing.SpOutputCollector;
-import org.apache.streampipes.wrapper.runtime.EventProcessor;
 
 import org.apache.streampipes.wrapper.runtime.StatefulEventProcessor;
-import org.apache.streampipes.wrapper.state.StateHandler;
-import org.apache.streampipes.wrapper.state.annotations.StateObject;
+import org.apache.streampipes.container.state.database.StateDB;
 import org.slf4j.Logger;
 
 public class Example extends
@@ -37,6 +34,7 @@ public class Example extends
 
   private static Logger LOG;
   private ExampleState state = new ExampleState();
+  private String elementId;
 
 
   //@StateObject
@@ -44,6 +42,7 @@ public class Example extends
 
   public Example(){
     super();
+    this.elementId = "Example" + (Math.random()*100000);
     //this.counter = 0;
     //this.stateHandler = new StateHandler(this);
   }
@@ -52,7 +51,7 @@ public class Example extends
   @Override
   public void onInvocation(ExampleParameters parameters,
         SpOutputCollector spOutputCollector, EventProcessorRuntimeContext runtimeContext) throws SpRuntimeException {
-
+        StateDB.openDB(elementId);
   }
 
   @Override
@@ -60,20 +59,25 @@ public class Example extends
     System.out.println(state.counter);
     event.addField("counter", ++state.counter);
     out.collect(event);
+    saveState();
   }
 
   @Override
   public void onDetach() throws SpRuntimeException {
-
+    StateDB.closeDB(elementId);
   }
 
   @Override
-  public String getState() throws SpRuntimeException {
+  public String getState(){
     return new Gson().toJson(this.state);
   }
 
   @Override
   public void setState(String state) throws SpRuntimeException {
     this.state = new Gson().fromJson(state, ExampleState.class);
+  }
+
+  private void saveState(){
+    StateDB.addState(elementId, getState());
   }
 }
