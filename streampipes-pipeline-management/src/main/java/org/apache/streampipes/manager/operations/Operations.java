@@ -160,8 +160,9 @@ public class Operations {
 
   public static PipelineOperationStatus migratePR(Pipeline pipeline, String nodes){
     PipelineExecutor pe = new PipelineExecutor(pipeline,true, true, true);
+    PipelineOperationStatus status = pe.migratePR(nodes);
     new PipelineStorageService(pipeline).updatePipeline();
-    return pe.migratePR(nodes);
+    return status;
   }
   /**
   public static PipelineOperationStatus migratePR_stateDB(Pipeline pipeline, String nodes){

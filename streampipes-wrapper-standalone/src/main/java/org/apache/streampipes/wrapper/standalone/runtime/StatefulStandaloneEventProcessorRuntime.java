@@ -70,6 +70,7 @@ public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBin
 
     @Override
     public void bindRuntime() throws SpRuntimeException {
+        engine.setElementId(this.params.getBindingParams().getGraph().getElementId());
         bindEngine();
         getInputCollectors().forEach(is -> is.registerConsumer(instanceId, this));
         prepareRuntime();
@@ -102,6 +103,7 @@ public class StatefulStandaloneEventProcessorRuntime<B extends EventProcessorBin
 
     public void bindWithState(PipelineElementState state) throws SpRuntimeException {
         bindEngine();
+        engine.setElementId(this.params.getBindingParams().getGraph().getElementId());
         engine.onInvocation(params.getBindingParams(), getOutputCollector() , params.getRuntimeContext());
         engine.setState(state.state);
         getInputCollectors().forEach(is -> is.registerConsumer(instanceId, this));

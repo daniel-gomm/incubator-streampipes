@@ -21,52 +21,54 @@ package org.apache.streampipes.example.pe.processor.example;
 
 import com.google.gson.Gson;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
+import org.apache.streampipes.container.state.StateHandler;
+import org.apache.streampipes.container.state.annotations.StateObject;
+import org.apache.streampipes.model.Response;
 import org.apache.streampipes.model.runtime.Event;
 import org.apache.streampipes.wrapper.context.EventProcessorRuntimeContext;
 import org.apache.streampipes.wrapper.routing.SpOutputCollector;
 
 import org.apache.streampipes.wrapper.runtime.StatefulEventProcessor;
-import org.apache.streampipes.container.state.database.StateDB;
 import org.slf4j.Logger;
 
 public class Example extends
         StatefulEventProcessor<ExampleParameters> {
 
   private static Logger LOG;
-  private ExampleState state = new ExampleState();
-  private String elementId;
+  //private ExampleState state = new ExampleState();
 
 
-  //@StateObject
-  //public int counter;
+  @StateObject
+  public int counter;
+
+  @StateObject
+  Response response = new Response(elementId,false, "This is a state test.");
 
   public Example(){
     super();
-    this.elementId = "Example" + (Math.random()*100000);
-    //this.counter = 0;
-    //this.stateHandler = new StateHandler(this);
+    this.counter = 0;
   }
 
 
   @Override
   public void onInvocation(ExampleParameters parameters,
         SpOutputCollector spOutputCollector, EventProcessorRuntimeContext runtimeContext) throws SpRuntimeException {
-        StateDB.openDB(elementId);
+    this.stateHandler = new StateHandler(this, this.elementId);
   }
 
   @Override
   public void onEvent(Event event, SpOutputCollector out) throws SpRuntimeException {
-    System.out.println(state.counter);
-    event.addField("counter", ++state.counter);
+    System.out.println(counter);
+    event.addField("counter", ++counter);
     out.collect(event);
-    saveState();
+    stateHandler.saveState();
   }
 
   @Override
   public void onDetach() throws SpRuntimeException {
-    StateDB.closeDB(elementId);
+    stateHandler.closeDB();
   }
-
+  /**
   @Override
   public String getState(){
     return new Gson().toJson(this.state);
@@ -75,9 +77,6 @@ public class Example extends
   @Override
   public void setState(String state) throws SpRuntimeException {
     this.state = new Gson().fromJson(state, ExampleState.class);
-  }
+  }**/
 
-  private void saveState(){
-    StateDB.addState(elementId, getState());
-  }
 }

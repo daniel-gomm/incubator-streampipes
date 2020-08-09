@@ -8,11 +8,8 @@ import javax.ws.rs.core.MediaType;
 @Path("/statedb")
 public class StateDB {
 
-    @POST
-    @Path("/{elementId}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public static String addState(@PathParam("elementId") String elementId, String payload){
+
+    public static String addState(String elementId, String payload){
         PeStateDataBase db = DataBaseInstances.INSTANCE.getDataBase(elementId);
         try {
             if (db == null) {
@@ -42,10 +39,8 @@ public class StateDB {
         }
     }
 
-    @GET
-    @Path("/{elementId}/{stateId}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public String getState(@PathParam("elementId") String elementId, @PathParam("stateId") String stateId){
+
+    public String getState(String elementId, String stateId){
         PeStateDataBase db = DataBaseInstances.INSTANCE.getDataBase(elementId);
         if(db == null){
             //Not found
@@ -59,10 +54,8 @@ public class StateDB {
     }
 
 
-    @DELETE
-    @Path("/{elementId}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public String removeDB(@PathParam("elementId") String elementId){
+
+    public String removeDB(String elementId){
         if (DataBaseInstances.INSTANCE.remove(elementId)){
             return new Response(elementId, true).toString();
         }else{
@@ -70,11 +63,8 @@ public class StateDB {
         }
     }
 
-    @GET
-    @Path("/{elementId}/close")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public static String closeDB(@PathParam("elementId") String elementId){
+
+    public static String closeDB(String elementId){
         PeStateDataBase db = DataBaseInstances.INSTANCE.getDataBase(elementId);
         if(db == null){
             //Not found
@@ -89,11 +79,8 @@ public class StateDB {
     }
 
 
-    @GET
-    @Path("/{elementId}/open")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public static String openDB(@PathParam("elementId") String elementId){
+
+    public static String openDB(String elementId){
         try{
             DataBaseInstances.INSTANCE.open(elementId);
             return new Response("open statedb", true).toString();
@@ -104,10 +91,6 @@ public class StateDB {
 
 
 
-    @GET
-    @Path("/close")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public String closeAllDBs(){
         if (DataBaseInstances.INSTANCE.closeDataBases()){
             return new Response("statedb", true).toString();
@@ -116,10 +99,7 @@ public class StateDB {
         }
     }
 
-    @GET
-    @Path("/open")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+
     public String openAllDBs(){
         try{
             DataBaseInstances.INSTANCE.openDataBases();

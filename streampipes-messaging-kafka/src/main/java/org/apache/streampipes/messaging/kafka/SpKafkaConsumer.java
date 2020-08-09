@@ -34,6 +34,7 @@ import org.apache.streampipes.model.grounding.SimpleTopicDefinition;
 import org.apache.streampipes.model.grounding.WildcardTopicDefinition;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -48,9 +49,8 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
   private Boolean patternTopic = false;
 
   //My code
-
-  private Long offset;
-  private Long startOffset;
+  private HashMap<Integer, Long> offsets = new HashMap<Integer, Long>();
+  private HashMap<Integer, Long> startOffsets;
   private String groupId = null;
   private volatile boolean threadSuspended = false;
 
@@ -116,10 +116,30 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
       });
     }
     //My code
-    if (this.startOffset !=  null){
+    if (this.startOffsets !=  null){
       //If an offset has been provided seek the offset to pick up processing from there
-      this.protocol.setOffset(this.startOffset.toString());
-      //kafkaConsumer.seek(new TopicPartition(topic, 0), startOffset);
+      for(TopicPartition tp : kafkaConsumer.assignment()){
+        if(kafkaConsumer.position(tp) != startOffsets.get(tp.partition())+1){
+          //Need to reprocess events
+          long endOffset = kafkaConsumer.position(tp);
+          kafkaConsumer.seek(tp, startOffsets.get(tp.partition()));
+          while(true){
+            ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(Duration.ofMillis(100));
+            boolean brk = false;
+            for(ConsumerRecord<String, byte[]> record : records){
+              if (record.offset() >= endOffset){
+                brk = true;
+                break;
+              }
+              byte[] rec = record.value();
+              eventProcessor.onEvent(rec);
+              kafkaConsumer.commitAsync();
+            }
+            if(brk)
+              break;
+          }
+        }
+      }
     }
     //End of my code
     while (isRunning) {
@@ -129,17 +149,20 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
         eventProcessor.onEvent(rec);
         //My code
         //save the offset each time an event is processed
-        this.offset = record.offset();
+        this.offsets.put(record.partition(), record.offset());
         kafkaConsumer.commitAsync();
         //End of my code
       }
       //My code -- check if paused, just paused after all records of last poll have been committed
       synchronized (this){
-        while (threadSuspended && isRunning){
+        while (threadSuspended){
           try {
             wait();
           } catch (InterruptedException e) {
             e.printStackTrace();
+          }
+          if(!isRunning){
+            break;
           }
         }
       }
@@ -206,21 +229,36 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
 
 
   //My code
+  private class KafkaState{
+    String groupId;
+    HashMap<Integer, Long> offsets;
+  }
+
   @Override
   public synchronized String getConsumerState(boolean close) throws SpRuntimeException {
+    KafkaState ks = new KafkaState();
+    ks.groupId = this.groupId;
+    ks.offsets = this.offsets;
     if (close)
       try{
         close();
-        return "\"GroupId:\"" + this.groupId;
+        //return "\"GroupId:\"" + this.groupId;
       }catch (Exception e){
         e.printStackTrace();
       }
-    return "\"GroupId:\"" + this.groupId;
+    return new Gson().toJson(ks);
     //return "\"Offset:\"" + offset;
   }
 
   @Override
   public void setConsumerState(String state) throws SpRuntimeException {
+    KafkaState kafkaState = new Gson().fromJson(state, KafkaState.class);
+    if(kafkaState == null){
+      throw new SpRuntimeException("Failed to restore Consumer state of Consumer with topic "+ this.topic);
+    }
+    this.groupId = kafkaState.groupId;
+    this.startOffsets = kafkaState.offsets;
+    /**
     System.out.println("\"Kafka consumer\"" + state);
     if (state.startsWith("\"GroupId:\"")){
       state = state.replaceFirst("\"GroupId:\"", "");
@@ -232,7 +270,7 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
     }
     else {
       throw new SpRuntimeException("Failed to restore Consumer state of Consumer with topic "+ this.topic);
-    }
+    }**/
   }
 
 
@@ -241,9 +279,7 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
     synchronized (this){
       try {
         if (!this.isFinished){
-          System.out.println("Waiting...");
           wait();
-          System.out.println("Done waiting");
         }
       } catch (InterruptedException e) {
         e.printStackTrace();
