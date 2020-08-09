@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 SP_COUCHDB_HOST=ubuntu
 SP_KAFKA_REST_HOST=ubuntu
 SP_KAFKA_REST_PORT=8073
