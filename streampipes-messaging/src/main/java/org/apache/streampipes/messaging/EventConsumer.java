@@ -29,4 +29,14 @@ public interface EventConsumer<TP extends TransportProtocol> {
     void disconnect() throws SpRuntimeException;
 
     Boolean isConnected();
+
+    String getConsumerState() throws SpRuntimeException;
+
+    void setConsumerState(String state) throws SpRuntimeException;
+
+    void pause();
+
+    void resume();
+
+    boolean isPaused();
 }

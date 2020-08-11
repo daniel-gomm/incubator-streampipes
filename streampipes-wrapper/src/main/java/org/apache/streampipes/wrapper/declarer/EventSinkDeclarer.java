@@ -19,7 +19,10 @@
 package org.apache.streampipes.wrapper.declarer;
 
 import org.apache.streampipes.container.declarer.SemanticEventConsumerDeclarer;
+import org.apache.streampipes.container.state.rocksdb.StateDatabase;
 import org.apache.streampipes.model.Response;
+import org.apache.streampipes.model.State.PipelineElementState;
+import org.apache.streampipes.model.graph.DataProcessorInvocation;
 import org.apache.streampipes.model.graph.DataSinkInvocation;
 import org.apache.streampipes.sdk.extractor.DataSinkParameterExtractor;
 import org.apache.streampipes.wrapper.params.binding.EventSinkBindingParams;
@@ -40,4 +43,13 @@ public abstract class EventSinkDeclarer<B extends EventSinkBindingParams, ES ext
     return invokeEPRuntime(graph);
   }
 
+  @Override
+  public Response invokeRuntime(DataSinkInvocation invocationGraph, PipelineElementState state) {
+    return invokeEPRuntime(invocationGraph, state);
+  }
+
+  @Override
+  public StateDatabase getDatabase() {
+    return getStateDatabase();
+  }
 }

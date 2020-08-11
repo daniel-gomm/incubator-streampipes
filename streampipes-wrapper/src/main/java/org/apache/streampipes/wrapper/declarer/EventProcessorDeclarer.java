@@ -18,6 +18,8 @@
 
 package org.apache.streampipes.wrapper.declarer;
 
+import org.apache.streampipes.container.state.rocksdb.StateDatabase;
+import org.apache.streampipes.model.State.PipelineElementState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.streampipes.container.declarer.SemanticEventProcessingAgentDeclarer;
@@ -44,4 +46,13 @@ public abstract class EventProcessorDeclarer<B extends EventProcessorBindingPara
 		return invokeEPRuntime(graph);
 	}
 
+	@Override
+	public Response invokeRuntime(DataProcessorInvocation invocationGraph, PipelineElementState state) {
+		return invokeEPRuntime(invocationGraph, state);
+	}
+
+	@Override
+	public StateDatabase getDatabase() {
+		return getStateDatabase();
+	}
 }

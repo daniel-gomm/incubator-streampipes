@@ -73,4 +73,24 @@ public class StandaloneSpInputCollector<T extends TransportProtocol> extends
       }
     }
   }
+
+  public String getConsumerState() throws SpRuntimeException{
+    return protocolDefinition.getConsumer().getConsumerState();
+  }
+
+  public void setConsumerState(String state) throws SpRuntimeException{
+    protocolDefinition.getConsumer().setConsumerState(state);
+  }
+
+  public void pauseConsumer(){
+    protocolDefinition.getConsumer().pause();
+  }
+
+  public void resumeConsumer(){
+    protocolDefinition.getConsumer().resume();
+  }
+
+  public boolean isPaused(){
+    return protocolDefinition.getConsumer().isPaused();
+  }
 }

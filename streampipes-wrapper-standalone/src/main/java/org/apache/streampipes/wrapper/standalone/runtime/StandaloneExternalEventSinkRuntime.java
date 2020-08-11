@@ -18,6 +18,7 @@
 package org.apache.streampipes.wrapper.standalone.runtime;
 
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
+import org.apache.streampipes.model.State.PipelineElementState;
 import org.apache.streampipes.model.graph.DataSinkInvocation;
 import org.apache.streampipes.wrapper.context.EventSinkRuntimeContext;
 import org.apache.streampipes.wrapper.params.binding.EventSinkBindingParams;
@@ -64,5 +65,31 @@ public class StandaloneExternalEventSinkRuntime<B extends EventSinkBindingParams
   public void discardRuntime() throws SpRuntimeException {
     discardEngine();
     postDiscard();
+  }
+
+  @Override
+  public void bindRuntime(PipelineElementState state) throws SpRuntimeException {
+    //TODO
+  }
+
+  @Override
+  public String getState() throws SpRuntimeException {
+    //TODO
+    return null;
+  }
+
+  @Override
+  public void setState(String state) throws SpRuntimeException {
+    //TODO
+  }
+
+  @Override
+  public void pause() throws SpRuntimeException {
+    //TODO
+  }
+
+  @Override
+  public void resume() throws SpRuntimeException {
+    //TODO
   }
 }

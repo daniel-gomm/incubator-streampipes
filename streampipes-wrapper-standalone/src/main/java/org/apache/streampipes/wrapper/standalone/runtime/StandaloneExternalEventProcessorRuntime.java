@@ -18,6 +18,7 @@
 package org.apache.streampipes.wrapper.standalone.runtime;
 
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
+import org.apache.streampipes.model.State.PipelineElementState;
 import org.apache.streampipes.model.graph.DataProcessorInvocation;
 import org.apache.streampipes.wrapper.context.EventProcessorRuntimeContext;
 import org.apache.streampipes.wrapper.params.binding.EventProcessorBindingParams;
@@ -65,5 +66,31 @@ public class StandaloneExternalEventProcessorRuntime<B extends EventProcessorBin
   public void discardRuntime() throws SpRuntimeException {
     discardEngine();
     postDiscard();
+  }
+
+  @Override
+  public void bindRuntime(PipelineElementState state) throws SpRuntimeException {
+    //TODO
+  }
+
+  @Override
+  public String getState() throws SpRuntimeException {
+    //TODO
+    return null;
+  }
+
+  @Override
+  public void setState(String state) throws SpRuntimeException {
+    //TODO
+  }
+
+  @Override
+  public void pause() throws SpRuntimeException {
+    //TODO
+  }
+
+  @Override
+  public void resume() throws SpRuntimeException {
+    //TODO
   }
 }

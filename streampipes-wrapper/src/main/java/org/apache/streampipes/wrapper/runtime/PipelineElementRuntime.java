@@ -20,6 +20,7 @@ package org.apache.streampipes.wrapper.runtime;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
+import org.apache.streampipes.model.State.PipelineElementState;
 
 public abstract class PipelineElementRuntime {
 
@@ -36,5 +37,15 @@ public abstract class PipelineElementRuntime {
   public abstract void bindRuntime() throws SpRuntimeException;
 
   public abstract void discardRuntime() throws SpRuntimeException;
+
+  public abstract void bindRuntime(PipelineElementState state) throws SpRuntimeException;
+
+  abstract public String getState() throws SpRuntimeException;
+
+  abstract public void setState(String state) throws SpRuntimeException;
+
+  abstract public void pause() throws SpRuntimeException;
+
+  abstract public void resume() throws SpRuntimeException;
 
 }

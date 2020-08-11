@@ -18,6 +18,8 @@
 
 package org.apache.streampipes.container.declarer;
 
+import org.apache.streampipes.container.state.rocksdb.StateDatabase;
+import org.apache.streampipes.model.State.PipelineElementState;
 import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
 import org.apache.streampipes.model.base.NamedStreamPipesEntity;
 import org.apache.streampipes.model.Response;
@@ -27,4 +29,16 @@ public interface InvocableDeclarer<D extends NamedStreamPipesEntity, I extends I
     Response invokeRuntime(I invocationGraph);
 
     Response detachRuntime(String pipelineId);
+
+    Response invokeRuntime(I invocationGraph, PipelineElementState state);
+
+    String getState();
+
+    Response setState(String state);
+
+    Response pause();
+
+    Response resume();
+
+    StateDatabase getDatabase();
 }

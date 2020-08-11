@@ -18,6 +18,10 @@
 
 package org.apache.streampipes.container.api;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import org.apache.streampipes.model.State.StatefulPayload;
+import org.apache.streampipes.model.graph.DataProcessorInvocation;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
@@ -39,12 +43,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 
 public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D extends Declarer,
@@ -65,11 +64,28 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Produces(MediaType.APPLICATION_JSON)
     public String invokeRuntime(@PathParam("elementId") String elementId, String payload) {
 
+        //My code
+        String originalPayload = payload;
+        StatefulPayload load = null;
+        try {
+            Gson gson = new Gson();
+            load = gson.fromJson(payload, StatefulPayload.class);
+            payload = load.namedStreamPipesEntity;
+            if(payload == null){
+                payload = originalPayload;
+            }
+        }catch (JsonSyntaxException e){
+            e.printStackTrace();
+            payload = originalPayload;
+        }
+
+        //End of my code
+
         try {
             I graph = Transformer.fromJsonLd(clazz, payload);
 
             if (isDebug()) {
-              graph = createGroundingDebugInformation(graph);
+                graph = createGroundingDebugInformation(graph);
             }
 
             InvocableDeclarer declarer = (InvocableDeclarer) getDeclarerById(elementId);
@@ -77,7 +93,16 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
             if (declarer != null) {
                 String runningInstanceId = getInstanceId(graph.getElementId(), elementId);
                 RunningInstances.INSTANCE.add(runningInstanceId, graph, declarer.getClass().newInstance());
-                Response resp = RunningInstances.INSTANCE.getInvocation(runningInstanceId).invokeRuntime(graph);
+                //My code
+                Response resp;
+                if (load.pipelineElementState == null) {
+                    resp = RunningInstances.INSTANCE.getInvocation(runningInstanceId).invokeRuntime(graph);
+                }
+                else{
+                    resp = RunningInstances.INSTANCE.getInvocation(runningInstanceId).invokeRuntime(graph, load.pipelineElementState);
+                }
+
+                //End of my code
                 return Util.toResponseString(resp);
             }
         } catch (RDFParseException | IOException | RepositoryException | InstantiationException | IllegalAccessException e) {
@@ -86,6 +111,7 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
         }
 
         return Util.toResponseString(elementId, false, "Could not find the element with id: " + elementId);
+
     }
 
     @POST
@@ -156,5 +182,73 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     private Boolean isDebug() {
         return "true".equals(System.getenv("SP_DEBUG"));
     }
+
+    @GET
+    @Path("{elementId}/{runningInstanceId}/state")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String getState(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
+
+        InvocableDeclarer runningInstance = RunningInstances.INSTANCE.getInvocation(runningInstanceId);
+
+        if (runningInstance != null) {
+            Response resp = new Response(elementId, true, runningInstance.getState());
+            return Util.toResponseString(resp);
+        }
+        return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
+
+    }
+
+    @PUT
+    @Path("{elementId}/{runningInstanceId}/state")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public String setState(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId, String payload){
+        InvocableDeclarer runningInstance = RunningInstances.INSTANCE.getInvocation(runningInstanceId);
+        if (runningInstance != null) {
+            Response resp = runningInstance.setState(payload);
+
+            return Util.toResponseString(resp);
+        }
+        return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
+    }
+
+
+    @GET
+    @Path("{elementId}/{runningInstanceId}/pause")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String pauseElement(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
+        InvocableDeclarer runningInstance = RunningInstances.INSTANCE.getInvocation(runningInstanceId);
+        if (runningInstance == null){
+            return Util.toResponseString(elementId, false, "Could not find the running stateful instance with id: " + runningInstanceId);
+        }
+        return Util.toResponseString(runningInstance.pause());
+    }
+
+    @GET
+    @Path("{elementId}/{runningInstanceId}/resume")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String resumeElement(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
+        InvocableDeclarer runningInstance = RunningInstances.INSTANCE.getInvocation(runningInstanceId);
+        if (runningInstance == null){
+            return Util.toResponseString(elementId, false, "Could not find the running stateful instance with id: " + runningInstanceId);
+        }
+        return Util.toResponseString(runningInstance.resume());
+    }
+
+    @GET
+    @Path("{elementId}/{runningInstanceId}/checkpoint")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String getCheckpoint(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
+
+        InvocableDeclarer runningInstance = RunningInstances.INSTANCE.getInvocation(runningInstanceId);
+
+        if (runningInstance != null) {
+            Response resp = new Response(elementId, true, runningInstance.getDatabase().findLast());
+            return Util.toResponseString(resp);
+        }
+        return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
+
+    }
+
+
 }
 

@@ -92,4 +92,29 @@ public class ActiveMQConsumer extends ActiveMQConnectionProvider implements
   public void close() throws Exception {
     disconnect();
   }
+
+  @Override
+  public String getConsumerState() throws SpRuntimeException {
+    return null;
+  }
+
+  @Override
+  public void setConsumerState(String state) throws SpRuntimeException {
+
+  }
+
+  @Override
+  public void pause() {
+
+  }
+
+  @Override
+  public void resume() {
+
+  }
+
+  @Override
+  public boolean isPaused() {
+    return false;
+  }
 }

@@ -18,14 +18,19 @@
 
 package org.apache.streampipes.wrapper.standalone.runtime;
 
+import com.google.gson.Gson;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
+import org.apache.streampipes.model.State.PipelineElementState;
 import org.apache.streampipes.model.graph.DataSinkInvocation;
 import org.apache.streampipes.wrapper.context.EventSinkRuntimeContext;
 import org.apache.streampipes.wrapper.params.binding.EventSinkBindingParams;
 import org.apache.streampipes.wrapper.params.runtime.EventSinkRuntimeParams;
 import org.apache.streampipes.wrapper.routing.SpInputCollector;
 import org.apache.streampipes.wrapper.runtime.EventSink;
+import org.apache.streampipes.wrapper.runtime.StatefulEventSink;
+import org.apache.streampipes.wrapper.standalone.routing.StandaloneSpInputCollector;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -76,5 +81,80 @@ public class StandaloneEventSinkRuntime<B extends EventSinkBindingParams> extend
   public void bindEngine() throws SpRuntimeException {
     engine.onInvocation(params.getBindingParams(), params.getRuntimeContext());
   }
+
+  @Override
+  public void bindRuntime(PipelineElementState state) throws SpRuntimeException {
+    bindEngine();
+    if(engine.getClass().equals(StatefulEventSink.class)){
+      ((StatefulEventSink)engine).setElementId(this.params.getBindingParams().getGraph().getElementId());
+      engine.onInvocation(params.getBindingParams(), params.getRuntimeContext());
+      ((StatefulEventSink)engine).setState(state.state);
+    }else{
+      engine.onInvocation(params.getBindingParams(), params.getRuntimeContext());
+    }
+    getInputCollectors().forEach(is -> is.registerConsumer(instanceId, this));
+    int i = 0;
+    for (SpInputCollector spInputCollector : getInputCollectors()) {
+      if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+        StandaloneSpInputCollector inputCollector = (StandaloneSpInputCollector) spInputCollector;
+        inputCollector.setConsumerState((String) state.consumerState.get(i++));
+      }
+    }
+    prepareRuntime();
+  }
+
+  @Override
+  public String getState() throws SpRuntimeException {
+    PipelineElementState state = new PipelineElementState();
+    state.consumerState = new ArrayList();
+    boolean alreadyPaused = ((StandaloneSpInputCollector) getInputCollectors().get(0)).isPaused();
+    if(!alreadyPaused){
+      pause();
+    }
+    for (SpInputCollector spInputCollector : getInputCollectors()) {
+      if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+        state.consumerState.add(((StandaloneSpInputCollector) spInputCollector).getConsumerState());
+      }
+    }
+    if(engine.getClass().equals(StatefulEventSink.class)){
+      state.state = ((StatefulEventSink)engine).getState();
+    }
+    if(!alreadyPaused){
+      resume();
+    }
+    return new Gson().toJson(state);
+  }
+
+  @Override
+  public void setState(String state) throws SpRuntimeException {
+    PipelineElementState peState = new Gson().fromJson(state, PipelineElementState.class);
+    int i = 0;
+    for (SpInputCollector spInputCollector : getInputCollectors()){
+      ((StandaloneSpInputCollector) spInputCollector).setConsumerState((String) peState.consumerState.get(i++));
+    }
+    if(engine.getClass().equals(StatefulEventSink.class)){
+      ((StatefulEventSink)engine).setState(peState.state);
+    }
+  }
+
+  @Override
+  public void pause() throws SpRuntimeException {
+    for (SpInputCollector spInputCollector : getInputCollectors()) {
+      if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+        ((StandaloneSpInputCollector) spInputCollector).pauseConsumer();
+      }
+    }
+  }
+
+  @Override
+  public void resume() throws SpRuntimeException {
+    for (SpInputCollector spInputCollector : getInputCollectors()) {
+      if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+        ((StandaloneSpInputCollector) spInputCollector).resumeConsumer();
+      }
+    }
+  }
+
+
 
 }

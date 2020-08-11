@@ -19,6 +19,7 @@
 package org.apache.streampipes.container.init;
 
 import org.apache.streampipes.container.declarer.InvocableDeclarer;
+import org.apache.streampipes.container.state.CheckpointingWorker;
 import org.apache.streampipes.container.util.ElementInfo;
 import org.apache.streampipes.model.base.NamedStreamPipesEntity;
 
@@ -30,9 +31,15 @@ public enum RunningInstances {
 
     private final Map<String, ElementInfo<NamedStreamPipesEntity, InvocableDeclarer>> runningInstances = new HashMap<>();
 
+    private final CheckpointingWorker worker = new CheckpointingWorker();
+
 
     public void add(String id, NamedStreamPipesEntity description, InvocableDeclarer invocation) {
         runningInstances.put(id, new ElementInfo<>(description, invocation));
+        CheckpointingWorker.registerPipelineElement(invocation, id);
+        if(!CheckpointingWorker.isRunning()){
+            worker.startWorker();
+        }
     }
 
     public InvocableDeclarer getInvocation(String id) {
@@ -49,6 +56,7 @@ public enum RunningInstances {
     }
 
     public void remove(String id) {
+        CheckpointingWorker.unregisterPipelineElement(id);
         runningInstances.remove(id);
     }
 
