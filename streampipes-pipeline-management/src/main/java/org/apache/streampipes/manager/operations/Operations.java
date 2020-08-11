@@ -183,4 +183,12 @@ public class Operations {
   public static String getRuntimeInfo(SpDataStream spDataStream) throws SpRuntimeException {
     return PipelineElementRuntimeInfoFetcher.INSTANCE.getCurrentData(spDataStream);
   }
+
+  public static PipelineOperationStatus migrate(Pipeline pipeline, String nodes){
+    PipelineExecutor pe = new PipelineExecutor(pipeline,true, true, true);
+    PipelineOperationStatus status = pe.migrate(nodes);
+    new PipelineStorageService(pipeline).updatePipeline();
+    return status;
+  }
+
 }

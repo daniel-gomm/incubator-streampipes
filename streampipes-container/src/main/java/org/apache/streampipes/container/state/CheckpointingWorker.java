@@ -6,7 +6,8 @@ import org.apache.streampipes.container.state.rocksdb.StateDatabase;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class CheckpointingWorker implements Runnable{
+public enum CheckpointingWorker implements Runnable{
+    INSTANCE;
 
 
     private static volatile TreeMap<Long, TrackedDatabase> invocations= new TreeMap();
@@ -32,6 +33,7 @@ public class CheckpointingWorker implements Runnable{
         if(!isRunning){
             Thread t = new Thread(this);
             t.start();
+            isRunning = true;
         }
     }
 
@@ -62,7 +64,7 @@ public class CheckpointingWorker implements Runnable{
                         String key = entry.getValue().elementId + System.currentTimeMillis();
                         entry.getValue().db.save(key, entry.getValue().invocableDeclarer.getState());
                         //Update the key of the entry
-                        invocations.remove(entry);
+                        invocations.remove(entry.getKey(), entry.getValue());
                         invocations.put(System.currentTimeMillis() + entry.getValue().waitInterval, entry.getValue());
                     }
                 }catch(Exception e){

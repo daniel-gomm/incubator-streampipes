@@ -24,6 +24,8 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.entity.ContentType;
+import org.apache.streampipes.model.State.PipelineElementState;
+import org.apache.streampipes.model.State.StatefulPayload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.streampipes.commons.Utils;
@@ -81,4 +83,57 @@ public class HttpRequestBuilder {
   private PipelineElementStatus convert(org.apache.streampipes.model.Response response) {
     return new PipelineElementStatus(belongsTo, payload.getName(), response.isSuccess(), response.getOptionalMessage());
   }
+
+  public PipelineElementStatus getState(){
+    try {
+      Response httpResp = Request.Get(belongsTo).connectTimeout(10000).execute();
+      return handleResponse(httpResp);
+    } catch (Exception e) {
+      LOG.error("Could get state of " + belongsTo, e.getMessage());
+      return new PipelineElementStatus(belongsTo, payload.getName(), false, e.getMessage());
+    }
+  }
+
+  private String statefulJsonLd(PipelineElementState state) throws Exception{
+    Gson gson = new Gson();
+    StatefulPayload load = new StatefulPayload();
+    load.pipelineElementState = state;
+    load.namedStreamPipesEntity = jsonLd();
+    return gson.toJson(load);
+  }
+
+
+  public PipelineElementStatus invoke(PipelineElementState state) {
+    LOG.info("Invoking element: " + belongsTo);
+    try {
+      String statefulJsonLd = statefulJsonLd(state);
+      Response httpResp =
+              Request.Post(belongsTo).bodyString(statefulJsonLd, ContentType.APPLICATION_JSON).connectTimeout(10000).execute();
+      return handleResponse(httpResp);
+    } catch (Exception e) {
+      LOG.error(e.getMessage());
+      return new PipelineElementStatus(belongsTo, payload.getName(), false, e.getMessage());
+    }
+  }
+
+  public PipelineElementStatus pause() {
+    try {
+      Response httpResp = Request.Get(belongsTo + "/pause").connectTimeout(10000).execute();
+      return handleResponse(httpResp);
+    } catch (Exception e) {
+      LOG.error("Could not pause pipeline " + belongsTo, e.getMessage());
+      return null;
+    }
+  }
+
+  public PipelineElementStatus resume(){
+    try {
+      Response httpResp = Request.Get(belongsTo+ "/resume").connectTimeout(10000).execute();
+      return handleResponse(httpResp);
+    } catch (Exception e) {
+      LOG.error("Could not resume pipeline " + belongsTo, e.getMessage());
+      return null;
+    }
+  }
+
 }

@@ -14,7 +14,6 @@ public class StateHandler {
     private HashMap<String, Field> fieldsMap;
     private Object obj;
     private String currentState;
-    private final String elementId;
     private StateSerializer serializer;
 
     private class ClassfulObject{
@@ -27,14 +26,13 @@ public class StateHandler {
         }
     }
 
-    public StateHandler(Object o, String elementId){
-        this(o, elementId, new GsonSerializer());
+    public StateHandler(Object o){
+        this(o, new GsonSerializer());
     }
 
-    public StateHandler(Object o, String elementId, StateSerializer serializer){
+    public StateHandler(Object o, StateSerializer serializer){
         this.obj = o;
         this.fields = new ArrayList<Field>(Arrays.asList(o.getClass().getFields()));
-        this.elementId = elementId.split("/")[2].replace(":", "") + elementId.split("/")[elementId.split("/").length - 1];
         //Only keep marked fields as part of the State
         for(Field f : o.getClass().getFields()){
             if(f.getAnnotation(StateObject.class) == null){

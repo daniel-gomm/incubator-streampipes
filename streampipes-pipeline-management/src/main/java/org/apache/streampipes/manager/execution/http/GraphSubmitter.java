@@ -18,6 +18,10 @@
 
 package org.apache.streampipes.manager.execution.http;
 
+import com.google.gson.Gson;
+import org.apache.streampipes.manager.state.checkpointing.BackendCheckpointingWorker;
+import org.apache.streampipes.manager.state.rocksdb.BackendStateDatabase;
+import org.apache.streampipes.model.State.PipelineElementState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.streampipes.model.SpDataSet;
@@ -25,8 +29,7 @@ import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
 import org.apache.streampipes.model.client.pipeline.PipelineElementStatus;
 import org.apache.streampipes.model.client.pipeline.PipelineOperationStatus;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class GraphSubmitter {
 
@@ -96,7 +99,6 @@ public class GraphSubmitter {
             "/" +dataSet.getDatasetInvocationId())
             .detach()));
     status.setSuccess(status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess));
-
     if (status.isSuccess()) {
       status.setTitle("Pipeline " + pipelineName + " successfully stopped");
     } else {
@@ -105,4 +107,117 @@ public class GraphSubmitter {
 
     return status;
   }
+
+  public PipelineOperationStatus invokeGraphs(Map<String, PipelineElementState> states) {
+    PipelineOperationStatus status = new PipelineOperationStatus();
+    status.setPipelineId(pipelineId);
+    status.setPipelineName(pipelineName);
+
+
+    for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ) {
+      InvocableStreamPipesEntity spe = iter.next();
+      PipelineElementStatus resp = null;
+      if(states.containsKey(spe.getElementId().split("/")[spe.getElementId().split("/").length-1])){
+        resp = new HttpRequestBuilder(spe, spe.getBelongsTo()).invoke(states.get(spe.getElementId().split("/")[spe.getElementId().split("/").length-1]));
+      } else{
+        //If no state is availible start regularly
+        resp = new HttpRequestBuilder(spe, spe.getBelongsTo()).invoke();
+      }
+      status.addPipelineElementStatus(resp);
+    }
+
+    if (status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess)) {
+      dataSets.forEach(dataSet ->
+              status.addPipelineElementStatus
+                      (new HttpRequestBuilder(dataSet, dataSet.getUri()).invoke()));
+    }
+    status.setSuccess(status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess));
+
+    if (status.isSuccess()) {
+      status.setTitle("Pipeline " + pipelineName + " successfully started");
+    } else {
+      LOG.info("Could not start pipeline, initializing rollback...");
+      rollbackInvokedPipelineElements(status);
+      status.setTitle("Could not start pipeline" + pipelineName + ".");
+    }
+    return status;
+  }
+
+  public Map<String, PipelineElementState> getStates(){
+    Map<String, PipelineElementState> states = new HashMap<String, PipelineElementState>();
+    Gson gson = new Gson();
+
+    PipelineOperationStatus status = new PipelineOperationStatus();
+    status.setPipelineId(pipelineId);
+    status.setPipelineName(pipelineName);
+
+    for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ){
+      InvocableStreamPipesEntity spe = iter.next();
+      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getUri() + "/state").getState();
+      status.addPipelineElementStatus(resp);
+      if (resp.isSuccess()) {
+        states.put(spe.getElementId().split("/")[spe.getElementId().split("/").length-1], gson.fromJson(resp.getOptionalMessage(), PipelineElementState.class));
+      }
+      status.setSuccess(status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess));
+
+    }
+
+
+    if (status.isSuccess()) {
+      status.setTitle("State of " + pipelineName + " successfully obtained.");
+    } else {
+      status.setTitle("Could not get all states for " + pipelineName + ".");
+    }
+
+    return states;
+  }
+
+
+  public PipelineOperationStatus pause(){
+    PipelineOperationStatus status = new PipelineOperationStatus();
+    status.setPipelineId(pipelineId);
+    status.setPipelineName(pipelineName);
+
+
+    for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ) {
+      InvocableStreamPipesEntity spe = iter.next();
+      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getUri()).pause();
+      status.addPipelineElementStatus(resp);
+    }
+
+    status.setSuccess(status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess));
+
+    if (status.isSuccess()) {
+      status.setTitle("Pipeline " + pipelineName + " successfully paused");
+    } else {
+      LOG.info("Could not pause pipeline.");
+      status.setTitle("Could not pause pipeline" + pipelineName + ".");
+    }
+    return status;
+  }
+
+
+  public PipelineOperationStatus resume(){
+    PipelineOperationStatus status = new PipelineOperationStatus();
+    status.setPipelineId(pipelineId);
+    status.setPipelineName(pipelineName);
+
+
+    for (Iterator<InvocableStreamPipesEntity> iter = graphs.iterator(); iter.hasNext(); ) {
+      InvocableStreamPipesEntity spe = iter.next();
+      PipelineElementStatus resp = new HttpRequestBuilder(spe, spe.getUri()).resume();
+      status.addPipelineElementStatus(resp);
+    }
+
+    status.setSuccess(status.getElementStatus().stream().allMatch(PipelineElementStatus::isSuccess));
+
+    if (status.isSuccess()) {
+      status.setTitle("Pipeline " + pipelineName + " successfully paused");
+    } else {
+      LOG.info("Could not pause pipeline.");
+      status.setTitle("Could not pause pipeline" + pipelineName + ".");
+    }
+    return status;
+  }
+
 }

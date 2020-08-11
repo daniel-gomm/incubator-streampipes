@@ -80,8 +80,47 @@ public abstract class PipelineElementDeclarer<B extends BindingParams, EPR exten
     }
   }
 
-  public StateDatabase getStateDatabase(){
+  public StateDatabase getDatabase(){
     return this.db;
+  }
+
+  public String getState(){
+    try {
+      return epRuntime.getState();
+    } catch (Exception e){
+      e.printStackTrace();
+      return null;
+    }
+  }
+
+  public Response setState(String state){
+    try{
+      epRuntime.setState(state);
+      return new Response(elementId, true);
+    }catch(Exception e){
+      e.printStackTrace();
+      return new Response(elementId, false, e.getMessage());
+    }
+  }
+
+  public Response pause(){
+    try{
+      epRuntime.pause();
+      return new Response(elementId, true);
+    }catch(Exception e){
+      e.printStackTrace();
+      return new Response(elementId, false, e.getMessage());
+    }
+  }
+
+  public Response resume(){
+    try{
+      epRuntime.resume();
+      return new Response(elementId, true);
+    }catch(Exception e){
+      e.printStackTrace();
+      return new Response(elementId, false, e.getMessage());
+    }
   }
 
 }

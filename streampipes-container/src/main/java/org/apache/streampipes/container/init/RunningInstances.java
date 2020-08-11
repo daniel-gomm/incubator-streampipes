@@ -31,14 +31,13 @@ public enum RunningInstances {
 
     private final Map<String, ElementInfo<NamedStreamPipesEntity, InvocableDeclarer>> runningInstances = new HashMap<>();
 
-    private final CheckpointingWorker worker = new CheckpointingWorker();
 
 
     public void add(String id, NamedStreamPipesEntity description, InvocableDeclarer invocation) {
         runningInstances.put(id, new ElementInfo<>(description, invocation));
         CheckpointingWorker.registerPipelineElement(invocation, id);
         if(!CheckpointingWorker.isRunning()){
-            worker.startWorker();
+            CheckpointingWorker.INSTANCE.startWorker();
         }
     }
 

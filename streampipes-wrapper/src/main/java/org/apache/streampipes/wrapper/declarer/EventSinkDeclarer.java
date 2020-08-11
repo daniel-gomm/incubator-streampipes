@@ -50,6 +50,6 @@ public abstract class EventSinkDeclarer<B extends EventSinkBindingParams, ES ext
 
   @Override
   public StateDatabase getDatabase() {
-    return getStateDatabase();
+    return getDatabase();
   }
 }

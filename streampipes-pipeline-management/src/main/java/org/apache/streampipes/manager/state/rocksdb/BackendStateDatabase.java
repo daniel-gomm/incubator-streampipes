@@ -1,16 +1,13 @@
-package org.apache.streampipes.container.state.rocksdb;
+package org.apache.streampipes.manager.state.rocksdb;
 
-import org.eclipse.rdf4j.query.algebra.Str;
 import org.rocksdb.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
-public class StateDatabase implements KeyValueRepository<byte[], byte[]> {
+public class BackendStateDatabase implements BackendKeyValueRepository<byte[], byte[]> {
 
     //class objects
     private static String path;
@@ -23,17 +20,17 @@ public class StateDatabase implements KeyValueRepository<byte[], byte[]> {
     private byte[] lastAdded;
     private Long retainedCheckpoints;
 
-    public StateDatabase(String columnFamily, String nodeId){
-        this(columnFamily, nodeId, new ColumnFamilyOptions()
+    public BackendStateDatabase(String columnFamily){
+        this(columnFamily, new ColumnFamilyOptions()
                 .optimizeUniversalStyleCompaction()
                 .optimizeForSmallDb(), 20L);
     }
 
-    public StateDatabase(String columnFamily, String nodeId, ColumnFamilyOptions cfOpts, Long retainedCheckpoints) {
+    public BackendStateDatabase(String columnFamily, ColumnFamilyOptions cfOpts, Long retainedCheckpoints) {
         this.retainedCheckpoints = retainedCheckpoints;
         this.columnFamily = columnFamily;
         if(path == null){
-            path = "/tmp/streampipes/rocks-db/" + nodeId;
+            path = "/tmp/streampipes/rocks-db/backend";
         }
         if(db == null){
             initialize();

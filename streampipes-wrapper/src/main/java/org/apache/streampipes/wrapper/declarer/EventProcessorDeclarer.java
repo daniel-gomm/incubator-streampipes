@@ -51,8 +51,4 @@ public abstract class EventProcessorDeclarer<B extends EventProcessorBindingPara
 		return invokeEPRuntime(invocationGraph, state);
 	}
 
-	@Override
-	public StateDatabase getDatabase() {
-		return getStateDatabase();
-	}
 }

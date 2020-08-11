@@ -1,0 +1,5 @@
+org.apache.streampipes.pe.processor.counter.title=Example
+org.apache.streampipes.pe.processor.counter.description=Description of processor
+
+example-key.title=Example Text Parameter
+example-key.description=Example Text Parameter Description
