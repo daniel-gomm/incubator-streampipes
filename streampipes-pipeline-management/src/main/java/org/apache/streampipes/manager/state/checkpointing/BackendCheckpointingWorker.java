@@ -13,6 +13,7 @@ public enum BackendCheckpointingWorker implements Runnable {
 
     private static volatile TreeMap<Long, TrackedBackendDatabase> invocations= new TreeMap();
     private static volatile boolean isRunning = false;
+    private static volatile BackendStateDatabase db;
 
     public void registerPipelineElement(InvocableStreamPipesEntity invoc, BackendStateDatabase db){
         registerPipelineElement(invoc, db, 60000L);

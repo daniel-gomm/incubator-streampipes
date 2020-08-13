@@ -85,7 +85,7 @@ public class StandaloneEventSinkRuntime<B extends EventSinkBindingParams> extend
   @Override
   public void bindRuntime(PipelineElementState state) throws SpRuntimeException {
     bindEngine();
-    if(engine.getClass().equals(StatefulEventSink.class)){
+    if(engine instanceof StatefulEventSink){
       ((StatefulEventSink)engine).setElementId(this.params.getBindingParams().getGraph().getElementId());
       engine.onInvocation(params.getBindingParams(), params.getRuntimeContext());
       ((StatefulEventSink)engine).setState(state.state);
@@ -95,7 +95,7 @@ public class StandaloneEventSinkRuntime<B extends EventSinkBindingParams> extend
     getInputCollectors().forEach(is -> is.registerConsumer(instanceId, this));
     int i = 0;
     for (SpInputCollector spInputCollector : getInputCollectors()) {
-      if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+      if (spInputCollector instanceof StandaloneSpInputCollector){
         StandaloneSpInputCollector inputCollector = (StandaloneSpInputCollector) spInputCollector;
         inputCollector.setConsumerState((String) state.consumerState.get(i++));
       }
@@ -112,11 +112,11 @@ public class StandaloneEventSinkRuntime<B extends EventSinkBindingParams> extend
       pause();
     }
     for (SpInputCollector spInputCollector : getInputCollectors()) {
-      if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+      if (spInputCollector instanceof StandaloneSpInputCollector){
         state.consumerState.add(((StandaloneSpInputCollector) spInputCollector).getConsumerState());
       }
     }
-    if(engine.getClass().equals(StatefulEventSink.class)){
+    if(engine instanceof StatefulEventSink){
       state.state = ((StatefulEventSink)engine).getState();
     }
     if(!alreadyPaused){
@@ -132,7 +132,7 @@ public class StandaloneEventSinkRuntime<B extends EventSinkBindingParams> extend
     for (SpInputCollector spInputCollector : getInputCollectors()){
       ((StandaloneSpInputCollector) spInputCollector).setConsumerState((String) peState.consumerState.get(i++));
     }
-    if(engine.getClass().equals(StatefulEventSink.class)){
+    if(engine instanceof StatefulEventSink){
       ((StatefulEventSink)engine).setState(peState.state);
     }
   }
@@ -140,7 +140,7 @@ public class StandaloneEventSinkRuntime<B extends EventSinkBindingParams> extend
   @Override
   public void pause() throws SpRuntimeException {
     for (SpInputCollector spInputCollector : getInputCollectors()) {
-      if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+      if (spInputCollector instanceof StandaloneSpInputCollector){
         ((StandaloneSpInputCollector) spInputCollector).pauseConsumer();
       }
     }
@@ -149,7 +149,7 @@ public class StandaloneEventSinkRuntime<B extends EventSinkBindingParams> extend
   @Override
   public void resume() throws SpRuntimeException {
     for (SpInputCollector spInputCollector : getInputCollectors()) {
-      if (spInputCollector.getClass().equals(StandaloneSpInputCollector.class)){
+      if (spInputCollector instanceof StandaloneSpInputCollector){
         ((StandaloneSpInputCollector) spInputCollector).resumeConsumer();
       }
     }

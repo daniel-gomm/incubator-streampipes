@@ -18,6 +18,7 @@
 
 package org.apache.streampipes.wrapper.declarer;
 
+import org.apache.streampipes.container.state.rocksdb.PipelineElementDatabase;
 import org.apache.streampipes.container.state.rocksdb.StateDatabase;
 import org.apache.streampipes.model.Response;
 import org.apache.streampipes.model.State.PipelineElementState;
@@ -32,16 +33,16 @@ public abstract class PipelineElementDeclarer<B extends BindingParams, EPR exten
 
   protected EPR epRuntime;
   protected String elementId;
-  protected StateDatabase db;
+  protected PipelineElementDatabase db;
 
   //TODO find expression for NodeID, e.g. graph.getAppId()
   public Response invokeEPRuntime(I graph) {
     try {
       elementId = graph.getElementId();
-      db = new StateDatabase(elementId, "NodeID");
       // change to getRuntime(graph, extractor)
       epRuntime = getRuntime(graph, getExtractor(graph));
       epRuntime.bindRuntime();
+      db = new PipelineElementDatabase(elementId);
       return new Response(graph.getElementId(), true);
     } catch (Exception e) {
       e.printStackTrace();
@@ -72,6 +73,7 @@ public abstract class PipelineElementDeclarer<B extends BindingParams, EPR exten
       // change to getRuntime(graph, extractor)
       epRuntime = getRuntime(graph, getExtractor(graph));
       epRuntime.bindRuntime(state);
+      db = new PipelineElementDatabase(elementId);
       return new Response(elementId, true, "Successfully initiated with state");
     }
     catch (Exception e){
@@ -80,7 +82,7 @@ public abstract class PipelineElementDeclarer<B extends BindingParams, EPR exten
     }
   }
 
-  public StateDatabase getDatabase(){
+  public PipelineElementDatabase getDatabase(){
     return this.db;
   }
 

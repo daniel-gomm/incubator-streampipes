@@ -1,28 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
-        <groupId>org.apache.streampipes</groupId>
         <artifactId>streampipes-parent</artifactId>
+        <groupId>org.apache.streampipes</groupId>
         <version>0.67.0-SNAPSHOT</version>
     </parent>
-
-    <groupId>org.apache.streampipes.example</groupId>
-    <artifactId>StatefulExamples</artifactId>
-    <version>0.67.0-SNAPSHOT</version>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.apache.streampipes.examples</groupId>
+    <artifactId>stateful-examples</artifactId>
 
     <properties>
         <sp.version>0.67.0-SNAPSHOT</sp.version>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>org.apache.streampipes</groupId>
-            <artifactId>streampipes-commons</artifactId>
-            <version>${sp.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.streampipes</groupId>
             <artifactId>streampipes-wrapper-standalone</artifactId>
@@ -75,6 +67,21 @@
         </dependency>
     </dependencies>
 
+    <repositories>
+        <repository>
+            <id>laus</id>
+            <name>nexus repository</name>
+            <url>http://laus.fzi.de/nexus/content/repositories/public/</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <build>
         <plugins>
             <plugin>
@@ -87,7 +94,7 @@
                             <goal>repackage</goal>
                         </goals>
                         <configuration>
-                            <mainClass>org.apache.streampipes.example.main.Init</mainClass>
+                            <mainClass>org.apache.streampipes.examples.main.Init</mainClass>
                         </configuration>
                     </execution>
                 </executions>
@@ -103,6 +110,6 @@
                 </configuration>
             </plugin>
         </plugins>
-        <finalName>StatefulExamples</finalName>
+        <finalName>stateful-examples</finalName>
     </build>
 </project>

@@ -35,10 +35,11 @@ public enum RunningInstances {
 
     public void add(String id, NamedStreamPipesEntity description, InvocableDeclarer invocation) {
         runningInstances.put(id, new ElementInfo<>(description, invocation));
+    }
+
+    public void registerForCheckpointing(String id){
+        InvocableDeclarer invocation = INSTANCE.getInvocation(id);
         CheckpointingWorker.registerPipelineElement(invocation, id);
-        if(!CheckpointingWorker.isRunning()){
-            CheckpointingWorker.INSTANCE.startWorker();
-        }
     }
 
     public InvocableDeclarer getInvocation(String id) {

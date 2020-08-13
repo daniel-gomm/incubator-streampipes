@@ -83,7 +83,7 @@ public class PipelineExecutor {
 
     if (status.isSuccess()) {
       storeInvocationGraphs(pipeline.getPipelineId(), graphs, dataSets);
-      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g, new BackendStateDatabase(g.getUri())));
+      //graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g, new BackendStateDatabase(g.getUri())));
       PipelineStatusManager.addPipelineStatus(pipeline.getPipelineId(),
               new PipelineStatusMessage(pipeline.getPipelineId(), System.currentTimeMillis(), PipelineStatusMessageType.PIPELINE_STARTED.title(), PipelineStatusMessageType.PIPELINE_STARTED.description()));
 
@@ -144,7 +144,7 @@ public class PipelineExecutor {
       if (storeStatus) {
         setPipelineStopped(pipeline);
       }
-      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getUri()));
+      //graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getUri()));
       PipelineStatusManager.addPipelineStatus(pipeline.getPipelineId(),
               new PipelineStatusMessage(pipeline.getPipelineId(),
                       System.currentTimeMillis(),

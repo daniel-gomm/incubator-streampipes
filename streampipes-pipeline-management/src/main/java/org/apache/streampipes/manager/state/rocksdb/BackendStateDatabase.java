@@ -18,16 +18,14 @@ public class BackendStateDatabase implements BackendKeyValueRepository<byte[], b
     private final String columnFamily;
     private ColumnFamilyHandle columnFamilyHandle = null;
     private byte[] lastAdded;
-    private Long retainedCheckpoints;
 
     public BackendStateDatabase(String columnFamily){
         this(columnFamily, new ColumnFamilyOptions()
                 .optimizeUniversalStyleCompaction()
-                .optimizeForSmallDb(), 20L);
+                .optimizeForSmallDb());
     }
 
-    public BackendStateDatabase(String columnFamily, ColumnFamilyOptions cfOpts, Long retainedCheckpoints) {
-        this.retainedCheckpoints = retainedCheckpoints;
+    public BackendStateDatabase(String columnFamily, ColumnFamilyOptions cfOpts) {
         this.columnFamily = columnFamily;
         if(path == null){
             path = "/tmp/streampipes/rocks-db/backend";
@@ -38,11 +36,6 @@ public class BackendStateDatabase implements BackendKeyValueRepository<byte[], b
         try {
             this.columnFamilyHandle = db.createColumnFamily(new ColumnFamilyDescriptor(this.columnFamily.getBytes(), cfOpts));
             columnFamilyHandles.add(this.columnFamilyHandle);
-            RocksIterator iterator = db.newIterator(this.columnFamilyHandle);
-            iterator.seekToLast();
-            if(iterator.isValid()){
-                lastAdded = iterator.key();
-            }
         } catch (RocksDBException e) {
             e.printStackTrace();
         }
@@ -89,7 +82,6 @@ public class BackendStateDatabase implements BackendKeyValueRepository<byte[], b
         try{
             db.put(columnFamilyHandle, key, value);
             this.lastAdded = key;
-            trim();
         }catch(RocksDBException e){
             e.printStackTrace();
         }
@@ -140,21 +132,4 @@ public class BackendStateDatabase implements BackendKeyValueRepository<byte[], b
     }
 
 
-    public void trim() {
-        RocksIterator iterator = db.newIterator(this.columnFamilyHandle);
-        long max_length = this.retainedCheckpoints;
-
-        for (iterator.seekToLast(); iterator.isValid(); iterator.prev()) {
-            if (max_length-- <= 0) {
-                byte[] currentKey = iterator.key();
-                iterator.seekToFirst();
-                try {
-                    db.deleteRange(this.columnFamilyHandle, iterator.key(), currentKey);
-                } catch (RocksDBException e) {
-                    e.printStackTrace();
-                }
-                break;
-            }
-        }
-    }
 }

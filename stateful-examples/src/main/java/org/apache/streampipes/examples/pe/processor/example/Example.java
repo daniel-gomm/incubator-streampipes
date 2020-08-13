@@ -1,28 +1,27 @@
 
-package org.apache.streampipes.pe.processor.counter;
+package org.apache.streampipes.examples.pe.processor.example;
 
 import org.apache.streampipes.container.state.StateHandler;
 import org.apache.streampipes.container.state.annotations.StateObject;
+import org.apache.streampipes.wrapper.runtime.StatefulEventProcessor;
 import org.apache.streampipes.model.runtime.Event;
 import org.apache.streampipes.wrapper.context.EventProcessorRuntimeContext;
 import org.apache.streampipes.wrapper.routing.SpOutputCollector;
+import org.apache.streampipes.wrapper.runtime.EventProcessor;
 
-import org.apache.streampipes.wrapper.runtime.StatefulEventProcessor;
 import org.slf4j.Logger;
 
-public class Counter extends StatefulEventProcessor<CounterParameters> {
+public class Example extends
+        StatefulEventProcessor<ExampleParameters> {
 
   private static Logger LOG;
 
-  @StateObject public int counter = 0;
+  @StateObject public int counter;
 
-  public Counter(){
-    super();
-  }
 
   @Override
-  public void onInvocation(CounterParameters parameters,
-                           SpOutputCollector spOutputCollector, EventProcessorRuntimeContext runtimeContext) {
+  public void onInvocation(ExampleParameters parameters,
+        SpOutputCollector spOutputCollector, EventProcessorRuntimeContext runtimeContext) {
     this.stateHandler = new StateHandler(this);
   }
 

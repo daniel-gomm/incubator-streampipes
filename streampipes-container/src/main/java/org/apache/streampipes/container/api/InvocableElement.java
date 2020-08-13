@@ -101,7 +101,7 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
                 else{
                     resp = RunningInstances.INSTANCE.getInvocation(runningInstanceId).invokeRuntime(graph, load.pipelineElementState);
                 }
-
+                RunningInstances.INSTANCE.registerForCheckpointing(runningInstanceId);
                 //End of my code
                 return Util.toResponseString(resp);
             }
@@ -242,7 +242,7 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
         InvocableDeclarer runningInstance = RunningInstances.INSTANCE.getInvocation(runningInstanceId);
 
         if (runningInstance != null) {
-            Response resp = new Response(elementId, true, runningInstance.getDatabase().findLast());
+            Response resp = new Response(elementId, true, runningInstance.getDatabase().getLast());
             return Util.toResponseString(resp);
         }
         return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);

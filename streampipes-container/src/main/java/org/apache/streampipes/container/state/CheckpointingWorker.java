@@ -11,22 +11,30 @@ public enum CheckpointingWorker implements Runnable{
 
 
     private static volatile TreeMap<Long, TrackedDatabase> invocations= new TreeMap();
-    private static volatile boolean isRunning = true;
+    private static volatile boolean isRunning = false;
 
     public static void registerPipelineElement(InvocableDeclarer invocation, String elementId){
-        registerPipelineElement(invocation, 10000L, elementId);
+        registerPipelineElement(invocation, 15000L, elementId);
     }
 
     public static void registerPipelineElement(InvocableDeclarer invocation, Long interval, String elementId){
         invocations.put(System.currentTimeMillis() + interval, new TrackedDatabase(invocation.getDatabase(), interval, invocation, elementId));
+        if(!isRunning()){
+            INSTANCE.startWorker();
+        }
     }
 
     public static void unregisterPipelineElement(String elementId){
+        Map.Entry e = null;
         for(Map.Entry<Long, TrackedDatabase> entry : invocations.entrySet()){
-            if(elementId.equals(entry.getValue().elementId)){
-                invocations.remove(entry.getValue());
-            }
+            if(elementId.equals(entry.getValue().elementId))
+                e = entry;
         }
+        if(e != null)
+            invocations.remove(e.getKey(), e.getValue());
+
+        if(invocations.isEmpty())
+            INSTANCE.stopWorker();
     }
 
     public void startWorker(){
@@ -51,7 +59,7 @@ public enum CheckpointingWorker implements Runnable{
         try{
             while(isRunning){
                 Map.Entry<Long, TrackedDatabase> entry = invocations.firstEntry();
-                Long wait = Math.min(entry.getKey() - System.currentTimeMillis(), 0);
+                Long wait = Math.max(entry.getKey() - System.currentTimeMillis(), 0);
                 try{
                     Thread.sleep(wait);
                 }catch (InterruptedException e){
@@ -61,24 +69,20 @@ public enum CheckpointingWorker implements Runnable{
                 try {
                     //Only start checkpointing if the PE is not unregistered yet
                     if (invocations.containsValue(entry.getValue())) {
-                        String key = entry.getValue().elementId + System.currentTimeMillis();
-                        entry.getValue().db.save(key, entry.getValue().invocableDeclarer.getState());
-                        //Update the key of the entry
-                        invocations.remove(entry.getKey(), entry.getValue());
-                        invocations.put(System.currentTimeMillis() + entry.getValue().waitInterval, entry.getValue());
+                        entry.getValue().db.add(entry.getValue().invocableDeclarer.getState());
                     }
                 }catch(Exception e){
                     e.printStackTrace();
                 }
+                //Update the key of the entry
+                invocations.remove(entry.getKey(), entry.getValue());
+                invocations.put(System.currentTimeMillis() + entry.getValue().waitInterval, entry.getValue());
             }
         }catch(Exception e){
             e.printStackTrace();
         }finally {
             //Manage the closure of the open databases
-            for(Map.Entry<Long, TrackedDatabase> entry : invocations.entrySet()){
-                entry.getValue().db.closeFamily();
-            }
-            StateDatabase.close();
+            StateDatabase.DATABASE.close();
             isRunning = false;
         }
     }

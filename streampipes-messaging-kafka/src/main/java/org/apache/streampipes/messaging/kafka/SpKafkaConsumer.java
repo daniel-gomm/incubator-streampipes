@@ -48,7 +48,7 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
 
   //My code
   private HashMap<Integer, Long> offsets = new HashMap<Integer, Long>();
-  private HashMap<Integer, Long> startOffsets;
+  private HashMap<Integer, Long> startOffsets = new HashMap<>();
   private String groupId = null;
   private volatile boolean threadSuspended = false;
 
@@ -114,7 +114,7 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
       });
     }
     //My code
-    if (this.startOffsets !=  null){
+    if (!this.startOffsets.isEmpty()){
       //If an offset has been provided seek the offset to pick up processing from there
       for(TopicPartition tp : kafkaConsumer.assignment()){
         if(kafkaConsumer.position(tp) != startOffsets.get(tp.partition())+1){

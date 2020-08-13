@@ -18,6 +18,7 @@
 
 package de.fzi.cep.sepa.html.page;
 
+import org.apache.streampipes.container.state.rocksdb.PipelineElementDatabase;
 import org.apache.streampipes.container.state.rocksdb.StateDatabase;
 import org.apache.streampipes.model.State.PipelineElementState;
 import org.junit.Test;
@@ -127,7 +128,7 @@ public class WelcomePageGeneratorImplTest {
             }
 
             @Override
-            public StateDatabase getDatabase() {
+            public PipelineElementDatabase getDatabase() {
                 return null;
             }
         };

@@ -1,7 +1,7 @@
 version: "2"
 services:
-  StatefulExamples:
-    image: StatefulExamples
+  stateful-examples:
+    image: stateful-examples
     depends_on:
       - "consul"
 #    ports:

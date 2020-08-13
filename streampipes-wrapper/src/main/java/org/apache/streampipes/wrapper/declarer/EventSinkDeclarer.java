@@ -48,8 +48,4 @@ public abstract class EventSinkDeclarer<B extends EventSinkBindingParams, ES ext
     return invokeEPRuntime(invocationGraph, state);
   }
 
-  @Override
-  public StateDatabase getDatabase() {
-    return getDatabase();
-  }
 }

@@ -33,6 +33,7 @@ public class StateHandler {
     public StateHandler(Object o, StateSerializer serializer){
         this.obj = o;
         this.fields = new ArrayList<Field>(Arrays.asList(o.getClass().getFields()));
+        this.serializer = serializer;
         //Only keep marked fields as part of the State
         for(Field f : o.getClass().getFields()){
             if(f.getAnnotation(StateObject.class) == null){

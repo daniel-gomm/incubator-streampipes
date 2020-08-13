@@ -1,10 +1,9 @@
-package org.apache.streampipes.config;
+package org.apache.streampipes.examples.config;
 
-
-
+import org.apache.streampipes.config.SpConfig;
 import org.apache.streampipes.container.model.PeConfig;
 
-import static org.apache.streampipes.config.ConfigKeys.*;
+import static org.apache.streampipes.examples.config.ConfigKeys.*;
 
 public enum Config implements PeConfig {
 
@@ -15,12 +14,12 @@ public enum Config implements PeConfig {
   public final static String serverUrl;
   public final static String iconBaseUrl;
 
-  private final static String SERVICE_ID= "pe/org.apache.streampipes";
+  private final static String SERVICE_ID= "pe/org.apache.streampipes.examples";
 
   Config() {
-    config = SpConfig.getSpConfig("pe/org.apache.streampipes");
+    config = SpConfig.getSpConfig("pe/org.apache.streampipes.examples");
 
-    config.register(HOST, "StatefulExamples", "Hostname for the pe sinks");
+    config.register(HOST, "stateful-examples", "Hostname for the pe sinks");
     config.register(PORT, 8090, "Port for the pe sinks");
 
     config.register(ICON_HOST, "backend", "Hostname for the icon host");

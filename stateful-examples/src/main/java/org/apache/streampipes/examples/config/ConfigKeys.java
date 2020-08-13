@@ -1,4 +1,4 @@
-package org.apache.streampipes.config;
+package org.apache.streampipes.examples.config;
 
 public class ConfigKeys {
   final static String HOST = "SP_HOST";

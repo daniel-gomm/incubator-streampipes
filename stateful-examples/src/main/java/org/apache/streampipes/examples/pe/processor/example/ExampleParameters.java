@@ -1,14 +1,13 @@
-package org.apache.streampipes.pe.processor.counter;
-
+package org.apache.streampipes.examples.pe.processor.example;
 
 import org.apache.streampipes.model.graph.DataProcessorInvocation;
 import org.apache.streampipes.wrapper.params.binding.EventProcessorBindingParams;
 
-public class CounterParameters extends EventProcessorBindingParams {
+public class ExampleParameters extends EventProcessorBindingParams {
 
   private String exampleText;
 
-  public CounterParameters(DataProcessorInvocation graph, String exampleText) {
+  public ExampleParameters(DataProcessorInvocation graph, String exampleText) {
     super(graph);
     this.exampleText = exampleText;
   }
