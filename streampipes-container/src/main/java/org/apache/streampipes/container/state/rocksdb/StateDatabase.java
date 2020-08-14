@@ -21,6 +21,8 @@ public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
 
 
     public ColumnFamilyHandle registerColumnFamily(String elementId) {
+        //TODO Remove print statement
+        System.out.println(elementId);
         if(path == null){
             path = "/tmp/streampipes/rocks-db/" + elementId.split("/")[2].replace(":","");
         }
@@ -41,12 +43,6 @@ public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
             this.columnFamilyHandles.add(cfHandle);
             this.columnFamiliesBytes.add(elementId.getBytes());
             return cfHandle;
-            /**
-            RocksIterator iterator = db.newIterator(this.columnFamilyHandle);
-            iterator.seekToLast();
-            if(iterator.isValid()){
-                lastAdded = iterator.key();
-            }**/
         } catch (RocksDBException e) {
             e.printStackTrace();
         }

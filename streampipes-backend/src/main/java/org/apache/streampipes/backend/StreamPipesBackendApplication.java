@@ -20,6 +20,7 @@ package org.apache.streampipes.backend;
 import org.apache.shiro.web.env.EnvironmentLoaderListener;
 import org.apache.shiro.web.servlet.OncePerRequestFilter;
 import org.apache.shiro.web.servlet.ShiroFilter;
+import org.apache.streampipes.manager.state.rocksdb.BackendStateDatabase;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ public class StreamPipesBackendApplication {
 
   public static void main(String[] args) {
     System.setProperty("org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH", "true");
+    BackendStateDatabase.DATABASE.initialize();
     SpringApplication.run(StreamPipesBackendApplication.class, args);
   }
 
@@ -64,6 +66,7 @@ public class StreamPipesBackendApplication {
         LOG.error("Pipeline {} could not be stopped", s.getPipelineName());
       }
     });
+    BackendStateDatabase.DATABASE.close();
   }
 
   @Bean

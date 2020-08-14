@@ -21,6 +21,7 @@ package org.apache.streampipes.manager.execution.http;
 import com.google.gson.Gson;
 import org.apache.streampipes.manager.state.checkpointing.BackendCheckpointingWorker;
 import org.apache.streampipes.manager.state.rocksdb.BackendStateDatabase;
+import org.apache.streampipes.manager.state.rocksdb.PipelineElementDatabase;
 import org.apache.streampipes.model.State.PipelineElementState;
 import org.lightcouch.DocumentConflictException;
 import org.apache.streampipes.manager.execution.status.PipelineStatusManager;
@@ -83,7 +84,7 @@ public class PipelineExecutor {
 
     if (status.isSuccess()) {
       storeInvocationGraphs(pipeline.getPipelineId(), graphs, dataSets);
-      //graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g, new BackendStateDatabase(g.getUri())));
+      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g, new PipelineElementDatabase(g.getUri())));
       PipelineStatusManager.addPipelineStatus(pipeline.getPipelineId(),
               new PipelineStatusMessage(pipeline.getPipelineId(), System.currentTimeMillis(), PipelineStatusMessageType.PIPELINE_STARTED.title(), PipelineStatusMessageType.PIPELINE_STARTED.description()));
 
@@ -144,7 +145,7 @@ public class PipelineExecutor {
       if (storeStatus) {
         setPipelineStopped(pipeline);
       }
-      //graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getUri()));
+      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getUri()));
       PipelineStatusManager.addPipelineStatus(pipeline.getPipelineId(),
               new PipelineStatusMessage(pipeline.getPipelineId(),
                       System.currentTimeMillis(),
@@ -212,6 +213,8 @@ public class PipelineExecutor {
       return status;
     }
 
+    //Unregister Databases in Backend
+    graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getUri()));
     //Get states of these pipeline Elements
     Map<String, PipelineElementState> states = new GraphSubmitter(pipeline.getPipelineId(),
             pipeline.getName(), onlyMigrate, dataSets).getStates();
@@ -277,6 +280,7 @@ public class PipelineExecutor {
         statusInvoc.setTitle("Failed to detach old Elements.");
         statusInvoc.setSuccess(false);
       }
+      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g, new PipelineElementDatabase(g.getUri())));
       return statusInvoc;
     }else{
       //Change back the description
@@ -304,6 +308,7 @@ public class PipelineExecutor {
         statusResume.setSuccess(false);
         statusResume.setTitle("Resumed on old Elements, migration unsuccessful.");
       }//TODO else
+      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g, new PipelineElementDatabase(g.getUri())));
       return statusResume;
     }
   }
