@@ -1,9 +1,9 @@
-package org.apache.streampipes.container.state;
+package org.apache.streampipes.state.handling;
 
 import com.google.common.reflect.TypeToken;
-import org.apache.streampipes.container.state.annotations.StateObject;
-import org.apache.streampipes.container.state.serializers.GsonSerializer;
-import org.apache.streampipes.container.state.serializers.StateSerializer;
+import org.apache.streampipes.state.annotations.StateObject;
+import org.apache.streampipes.state.serializers.GsonSerializer;
+import org.apache.streampipes.state.serializers.StateSerializer;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -13,18 +13,8 @@ public class StateHandler {
     private ArrayList<Field> fields;
     private HashMap<String, Field> fieldsMap;
     private Object obj;
-    private String currentState;
     private StateSerializer serializer;
 
-    private class ClassfulObject{
-        String clazz;
-        String object;
-
-        public ClassfulObject(Object obj){
-            this.clazz = obj.getClass().getName();
-            this.object = serializer.serialize(obj);
-        }
-    }
 
     public StateHandler(Object o){
         this(o, new GsonSerializer());
@@ -67,13 +57,12 @@ public class StateHandler {
         Map<String, ClassfulObject> list = new HashMap<>();
         for(Field f : this.fields){
             try {
-                ClassfulObject o = new ClassfulObject(f.get(this.obj));
+                ClassfulObject o = new ClassfulObject(f.get(this.obj), this.serializer);
                 list.put(f.getName(), o);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
         }
-        this.currentState = serializer.serialize(list);
-        return this.currentState;
+        return serializer.serialize(list);
     }
 }

@@ -1,4 +1,4 @@
-package org.apache.streampipes.model.State;
+package org.apache.streampipes.model.state;
 
 import java.util.List;
 

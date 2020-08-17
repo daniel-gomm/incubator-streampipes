@@ -19,6 +19,7 @@
 package org.apache.streampipes.container.standalone.init;
 
 
+import org.apache.streampipes.state.rocksdb.StateDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -53,7 +54,7 @@ public abstract class StandaloneModelSubmitter extends ModelSubmitter {
         SpringApplication app = new SpringApplication(StandaloneModelSubmitter.class);
         app.setDefaultProperties(Collections.singletonMap("server.port", peConfig.getPort()));
         app.run();
-
+        StateDatabase.DATABASE.initialize("/tmp/streampipes/rocksdb/pipelineelement" + peConfig.getPort());
         ConsulUtil.registerPeService(
                 peConfig.getId(),
                 peConfig.getHost(),
@@ -73,6 +74,7 @@ public abstract class StandaloneModelSubmitter extends ModelSubmitter {
             } catch (InterruptedException e) {
                 LOG.error("Could not pause current thread...");
             }
+            StateDatabase.DATABASE.close();
             runningInstancesCount = RunningInstances.INSTANCE.getRunningInstancesCount();
         }
     }

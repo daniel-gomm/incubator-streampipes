@@ -1,11 +1,11 @@
-package org.apache.streampipes.manager.state.checkpointing;
+package org.apache.streampipes.manager.checkpointing;
 
-import org.apache.streampipes.container.state.TrackedDatabase;
 import org.apache.streampipes.manager.execution.http.HttpRequestBuilder;
-import org.apache.streampipes.manager.state.rocksdb.BackendStateDatabase;
-import org.apache.streampipes.manager.state.rocksdb.PipelineElementDatabase;
 import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
 import org.apache.streampipes.model.client.pipeline.PipelineElementStatus;
+import org.apache.streampipes.state.database.DatabasesSingleton;
+import org.apache.streampipes.state.rocksdb.PipelineElementDatabase;
+import org.apache.streampipes.state.rocksdb.StateDatabase;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -15,10 +15,9 @@ public enum BackendCheckpointingWorker implements Runnable {
 
     private static volatile TreeMap<Long, TrackedBackendDatabase> invocations= new TreeMap();
     private static volatile boolean isRunning = false;
-    private static volatile BackendStateDatabase db;
 
-    public void registerPipelineElement(InvocableStreamPipesEntity invoc, PipelineElementDatabase db){
-        registerPipelineElement(invoc, db, 60000L);
+    public void registerPipelineElement(InvocableStreamPipesEntity invoc){
+        registerPipelineElement(invoc, DatabasesSingleton.INSTANCE.getDatabase(invoc.getElementId()), 60000L);
     }
 
     public void registerPipelineElement(InvocableStreamPipesEntity invoc, PipelineElementDatabase db, Long interval){
@@ -77,7 +76,7 @@ public enum BackendCheckpointingWorker implements Runnable {
                     //Only start checkpointing if the PE is not unregistered yet
                     if (invocations.containsValue(entry.getValue())) {
 
-                        PipelineElementStatus resp = new HttpRequestBuilder(entry.getValue().invocableStreamPipesEntity, entry.getValue().invocableStreamPipesEntity.getUri() + "/checkpoint").getState();
+                        PipelineElementStatus resp = new HttpRequestBuilder(entry.getValue().invocableStreamPipesEntity, entry.getValue().invocableStreamPipesEntity.getElementId() + "/checkpoint").getState();
                         if(resp.isSuccess()){
                             entry.getValue().db.add(resp.getOptionalMessage());
                         }
@@ -92,7 +91,7 @@ public enum BackendCheckpointingWorker implements Runnable {
         }catch (Exception e){
             e.printStackTrace();
         }finally {
-
+            isRunning = false;
         }
     }
 }

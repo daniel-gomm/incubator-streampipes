@@ -19,10 +19,10 @@
 package org.apache.streampipes.manager.execution.http;
 
 import com.google.gson.Gson;
-import org.apache.streampipes.manager.state.checkpointing.BackendCheckpointingWorker;
-import org.apache.streampipes.manager.state.rocksdb.BackendStateDatabase;
-import org.apache.streampipes.manager.state.rocksdb.PipelineElementDatabase;
-import org.apache.streampipes.model.State.PipelineElementState;
+import org.apache.streampipes.manager.checkpointing.BackendCheckpointingWorker;
+import org.apache.streampipes.model.state.PipelineElementState;
+import org.apache.streampipes.state.database.DatabasesSingleton;
+import org.apache.streampipes.state.rocksdb.PipelineElementDatabase;
 import org.lightcouch.DocumentConflictException;
 import org.apache.streampipes.manager.execution.status.PipelineStatusManager;
 import org.apache.streampipes.manager.execution.status.SepMonitoringManager;
@@ -84,7 +84,8 @@ public class PipelineExecutor {
 
     if (status.isSuccess()) {
       storeInvocationGraphs(pipeline.getPipelineId(), graphs, dataSets);
-      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g, new PipelineElementDatabase(g.getUri())));
+      graphs.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
+      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
       PipelineStatusManager.addPipelineStatus(pipeline.getPipelineId(),
               new PipelineStatusMessage(pipeline.getPipelineId(), System.currentTimeMillis(), PipelineStatusMessageType.PIPELINE_STARTED.title(), PipelineStatusMessageType.PIPELINE_STARTED.description()));
 
@@ -280,7 +281,8 @@ public class PipelineExecutor {
         statusInvoc.setTitle("Failed to detach old Elements.");
         statusInvoc.setSuccess(false);
       }
-      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g, new PipelineElementDatabase(g.getUri())));
+      graphs.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
+      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
       return statusInvoc;
     }else{
       //Change back the description
@@ -308,7 +310,8 @@ public class PipelineExecutor {
         statusResume.setSuccess(false);
         statusResume.setTitle("Resumed on old Elements, migration unsuccessful.");
       }//TODO else
-      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g, new PipelineElementDatabase(g.getUri())));
+      graphs.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
+      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
       return statusResume;
     }
   }

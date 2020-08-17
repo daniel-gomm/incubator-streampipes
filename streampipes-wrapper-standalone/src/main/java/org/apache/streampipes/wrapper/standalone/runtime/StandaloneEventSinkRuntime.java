@@ -20,7 +20,7 @@ package org.apache.streampipes.wrapper.standalone.runtime;
 
 import com.google.gson.Gson;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
-import org.apache.streampipes.model.State.PipelineElementState;
+import org.apache.streampipes.model.state.PipelineElementState;
 import org.apache.streampipes.model.graph.DataSinkInvocation;
 import org.apache.streampipes.wrapper.context.EventSinkRuntimeContext;
 import org.apache.streampipes.wrapper.params.binding.EventSinkBindingParams;

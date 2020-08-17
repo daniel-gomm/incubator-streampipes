@@ -1,7 +1,8 @@
-package org.apache.streampipes.container.state;
+package org.apache.streampipes.container.checkpointing;
 
 import org.apache.streampipes.container.declarer.InvocableDeclarer;
-import org.apache.streampipes.container.state.rocksdb.StateDatabase;
+import org.apache.streampipes.state.database.DatabasesSingleton;
+import org.apache.streampipes.state.rocksdb.StateDatabase;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -18,16 +19,19 @@ public enum CheckpointingWorker implements Runnable{
     }
 
     public static void registerPipelineElement(InvocableDeclarer invocation, Long interval, String elementId){
-        invocations.put(System.currentTimeMillis() + interval, new TrackedDatabase(invocation.getDatabase(), interval, invocation, elementId));
+        invocations.put(System.currentTimeMillis() + interval,
+                new TrackedDatabase(DatabasesSingleton.INSTANCE.getDatabase(elementId),
+                        interval, invocation,
+                        elementId.split("/")[elementId.split("/").length - 1]));
         if(!isRunning()){
             INSTANCE.startWorker();
         }
     }
 
-    public static void unregisterPipelineElement(String elementId){
+    public static void unregisterPipelineElement(String runningInstanceId){
         Map.Entry e = null;
         for(Map.Entry<Long, TrackedDatabase> entry : invocations.entrySet()){
-            if(elementId.equals(entry.getValue().elementId))
+            if(runningInstanceId.equals(entry.getValue().elementId))
                 e = entry;
         }
         if(e != null)
@@ -81,8 +85,6 @@ public enum CheckpointingWorker implements Runnable{
         }catch(Exception e){
             e.printStackTrace();
         }finally {
-            //Manage the closure of the open databases
-            StateDatabase.DATABASE.close();
             isRunning = false;
         }
     }

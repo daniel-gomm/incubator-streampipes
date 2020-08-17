@@ -1,8 +1,7 @@
-package org.apache.streampipes.container.state;
+package org.apache.streampipes.container.checkpointing;
 
 import org.apache.streampipes.container.declarer.InvocableDeclarer;
-import org.apache.streampipes.container.state.rocksdb.PipelineElementDatabase;
-import org.apache.streampipes.container.state.rocksdb.StateDatabase;
+import org.apache.streampipes.state.rocksdb.PipelineElementDatabase;
 
 public class TrackedDatabase {
     PipelineElementDatabase db;

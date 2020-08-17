@@ -19,9 +19,10 @@
 package org.apache.streampipes.container.init;
 
 import org.apache.streampipes.container.declarer.InvocableDeclarer;
-import org.apache.streampipes.container.state.CheckpointingWorker;
+import org.apache.streampipes.container.checkpointing.CheckpointingWorker;
 import org.apache.streampipes.container.util.ElementInfo;
 import org.apache.streampipes.model.base.NamedStreamPipesEntity;
+import org.apache.streampipes.state.database.DatabasesSingleton;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,8 +38,9 @@ public enum RunningInstances {
         runningInstances.put(id, new ElementInfo<>(description, invocation));
     }
 
-    public void registerForCheckpointing(String id){
+    public void registerForCheckpointing(String id, String elementId){
         InvocableDeclarer invocation = INSTANCE.getInvocation(id);
+        DatabasesSingleton.INSTANCE.addNew(id);
         CheckpointingWorker.registerPipelineElement(invocation, id);
     }
 

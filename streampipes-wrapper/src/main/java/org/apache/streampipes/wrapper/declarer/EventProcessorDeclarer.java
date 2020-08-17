@@ -18,8 +18,7 @@
 
 package org.apache.streampipes.wrapper.declarer;
 
-import org.apache.streampipes.container.state.rocksdb.StateDatabase;
-import org.apache.streampipes.model.State.PipelineElementState;
+import org.apache.streampipes.model.state.PipelineElementState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.streampipes.container.declarer.SemanticEventProcessingAgentDeclarer;

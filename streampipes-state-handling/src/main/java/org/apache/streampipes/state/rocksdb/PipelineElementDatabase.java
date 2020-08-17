@@ -1,6 +1,6 @@
-package org.apache.streampipes.container.state.rocksdb;
+package org.apache.streampipes.state.rocksdb;
 
-import org.apache.streampipes.container.state.CheckpointingWorker;
+import org.apache.streampipes.state.database.DatabasesSingleton;
 import org.rocksdb.ColumnFamilyHandle;
 
 public class PipelineElementDatabase {
@@ -11,7 +11,7 @@ public class PipelineElementDatabase {
     private Long retainedCheckpoints;
 
     public PipelineElementDatabase(String elementId) {
-        this(elementId, 50L);
+        this(elementId, 15L);
     }
 
     public PipelineElementDatabase(String elementId, Long retainedCheckpoints) {
@@ -19,6 +19,15 @@ public class PipelineElementDatabase {
         this.retainedCheckpoints = retainedCheckpoints;
         this.columnFamilyHandle = StateDatabase.DATABASE.registerColumnFamily(this.columnFamily);
         this.lastAdded = StateDatabase.DATABASE.findLast(this.columnFamilyHandle);
+        DatabasesSingleton.INSTANCE.addDatabase(elementId, this);
+    }
+
+    public PipelineElementDatabase(String elementId, ColumnFamilyHandle cfHandle){
+        this.columnFamily = elementId;
+        this.columnFamilyHandle = cfHandle;
+        this.retainedCheckpoints = 15L;
+        this.lastAdded = StateDatabase.DATABASE.findLast(cfHandle);
+        DatabasesSingleton.INSTANCE.addDatabase(elementId, this);
     }
 
     public void add(String value){
@@ -39,8 +48,8 @@ public class PipelineElementDatabase {
         StateDatabase.DATABASE.delete(key.getBytes(), this.columnFamilyHandle);
     }
 
-    public void close(){
-        StateDatabase.DATABASE.closeFamily(this.columnFamilyHandle);
+    public void delete(){
+        StateDatabase.DATABASE.deleteFamily(this.columnFamilyHandle);
     }
 
 }

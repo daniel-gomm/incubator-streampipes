@@ -1,5 +1,7 @@
-package org.apache.streampipes.container.state.rocksdb;
+package org.apache.streampipes.state.rocksdb;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.rocksdb.*;
 
 import java.io.File;
@@ -12,6 +14,7 @@ import java.util.HashSet;
 public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
     DATABASE;
 
+    private final Logger LOG = LoggerFactory.getLogger(StateDatabase.class);
     private String path;
     private RocksDB db;
     private ArrayList<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
@@ -21,13 +24,15 @@ public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
 
 
     public ColumnFamilyHandle registerColumnFamily(String elementId) {
+        LOG.info("Registering Pipeline Element: " + elementId);
         //TODO Remove print statement
         System.out.println(elementId);
         if(path == null){
-            path = "/tmp/streampipes/rocks-db/" + elementId.split("/")[2].replace(":","");
+            LOG.error("Could not register Column Family, path has not been initialized.");
+            return null;
         }
-        if(db == null){
-            initialize();
+        if(db == null && path != null){
+            initialize(path);
         }
         try {
             for(ColumnFamilyHandle cfHandle : this.columnFamilyHandles){
@@ -44,13 +49,16 @@ public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
             this.columnFamiliesBytes.add(elementId.getBytes());
             return cfHandle;
         } catch (RocksDBException e) {
+            LOG.error("Could not register Pipeline Element " + elementId, e);
             e.printStackTrace();
         }
         return null;
     }
 
 
-    private void initialize(){
+    public void initialize(String path){
+        this.path = path;
+        LOG.info("Initializing Database");
         RocksDB.loadLibrary();
         //Check if directory and file already exist, if not create them
         File f = new File(path);
@@ -74,6 +82,7 @@ public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
             this.columnFamiliesBytes.addAll(RocksDB.listColumnFamilies(options, this.path));
             for(byte[] colFam : this.columnFamiliesBytes){
                 cfDesc.add(new ColumnFamilyDescriptor(colFam, cfOpts));
+                LOG.info("Opening column family " + new String(colFam));
             }
         }catch (RocksDBException e){
             e.printStackTrace();
@@ -87,25 +96,29 @@ public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
                     .optimizeForSmallDb();
             this.rocksObjects.add(options);
             db = RocksDB.open(options, path, cfDesc, this.columnFamilyHandles);
+            for(ColumnFamilyHandle cfHandle : this.columnFamilyHandles){
+                new PipelineElementDatabase(new String(cfHandle.getName()), cfHandle);
+            }
         } catch (RocksDBException e) {
             e.printStackTrace();
         }
     }
 
     public void close(){
-        if(this.db == null)
-            return;
+        LOG.info("Closing Database.");
         //close open column family handles
         for(ColumnFamilyHandle cfh : this.columnFamilyHandles){
             cfh.close();
-            this.columnFamilyHandles.remove(cfh);
         }
+        this.columnFamilyHandles = new ArrayList<>();
         for(RocksObject ro : this.rocksObjects){
             ro.close();
-            this.rocksObjects.remove(ro);
         }
+        this.rocksObjects = new ArrayList<>();
         //close database and set to null to indicate that it has to be opened again
         db.close();
+        if(this.db == null)
+            return;
         db = null;
     }
 
@@ -114,6 +127,7 @@ public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
         try{
             db.put(columnFamily, key, value);
         }catch(RocksDBException e){
+            LOG.error("Could not save to key " + new String(key), e);
             e.printStackTrace();
         }
     }
@@ -128,6 +142,7 @@ public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
             byte[] result = db.get(columnFamily, key);
             return result;
         }catch (RocksDBException e){
+            LOG.error("Could not find key " + new String(key), e);
             e.printStackTrace();
         }
         return null;
@@ -152,21 +167,22 @@ public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
         try{
             db.delete(columnFamily, key);
         } catch(RocksDBException e){
+            LOG.error("Could not delete key " + new String(key), e);
             e.printStackTrace();
         }
     }
 
     public void delete(String key, ColumnFamilyHandle columnFamily){ delete(key.getBytes(), columnFamily);}
 
-    public void closeFamily(ColumnFamilyHandle columnFamily){
+    public void deleteFamily(ColumnFamilyHandle columnFamily){
         try{
             this.columnFamiliesBytes.remove(columnFamily.getName());
+            db.dropColumnFamily(columnFamily);
         }catch(RocksDBException e){
+            LOG.error("Could not close column family.", e);
             e.printStackTrace();
         }
-        if(columnFamiliesBytes.isEmpty()){
-            close();
-        }
+        columnFamily.close();
     }
 
 
@@ -181,6 +197,7 @@ public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
                 try {
                     db.deleteRange(columnFamily, iterator.key(), currentKey);
                 } catch (RocksDBException e) {
+                    LOG.error("Could not delete range. ", e);
                     e.printStackTrace();
                 }
                 break;

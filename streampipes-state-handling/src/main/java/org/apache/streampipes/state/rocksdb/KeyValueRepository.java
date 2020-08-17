@@ -1,4 +1,4 @@
-package org.apache.streampipes.container.state.rocksdb;
+package org.apache.streampipes.state.rocksdb;
 
 import org.rocksdb.ColumnFamilyHandle;
 

@@ -1,6 +1,6 @@
 package org.apache.streampipes.wrapper.runtime;
 
-import org.apache.streampipes.container.state.StateHandler;
+import org.apache.streampipes.state.handling.StateHandler;
 import org.apache.streampipes.wrapper.params.binding.EventSinkBindingParams;
 
 public abstract class StatefulEventSink<B extends EventSinkBindingParams> implements EventSink<B>{

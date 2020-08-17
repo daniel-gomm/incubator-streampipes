@@ -1,4 +1,4 @@
-package org.apache.streampipes.model.State;
+package org.apache.streampipes.model.state;
 
 public class StatefulPayload {
     public PipelineElementState pipelineElementState;

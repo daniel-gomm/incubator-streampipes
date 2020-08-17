@@ -50,6 +50,11 @@
 			<artifactId>streampipes-serializers</artifactId>
 			<version>0.67.0-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.streampipes</groupId>
+			<artifactId>streampipes-state-database</artifactId>
+			<version>0.67.0-SNAPSHOT</version>
+		</dependency>
 
 		<!-- External dependencies -->
 		<dependency>

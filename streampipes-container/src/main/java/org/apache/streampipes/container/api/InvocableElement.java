@@ -20,8 +20,9 @@ package org.apache.streampipes.container.api;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import org.apache.streampipes.model.State.StatefulPayload;
-import org.apache.streampipes.model.graph.DataProcessorInvocation;
+import org.apache.streampipes.container.checkpointing.CheckpointingWorker;
+import org.apache.streampipes.model.state.StatefulPayload;
+import org.apache.streampipes.state.database.DatabasesSingleton;
 import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
@@ -101,7 +102,7 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
                 else{
                     resp = RunningInstances.INSTANCE.getInvocation(runningInstanceId).invokeRuntime(graph, load.pipelineElementState);
                 }
-                RunningInstances.INSTANCE.registerForCheckpointing(runningInstanceId);
+                RunningInstances.INSTANCE.registerForCheckpointing(runningInstanceId, graph.getElementId());
                 //End of my code
                 return Util.toResponseString(resp);
             }
@@ -239,10 +240,10 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Produces(MediaType.APPLICATION_JSON)
     public String getCheckpoint(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
 
-        InvocableDeclarer runningInstance = RunningInstances.INSTANCE.getInvocation(runningInstanceId);
+        String checkpoint = DatabasesSingleton.INSTANCE.getDatabase(runningInstanceId).getLast();
 
-        if (runningInstance != null) {
-            Response resp = new Response(elementId, true, runningInstance.getDatabase().getLast());
+        if (checkpoint != null) {
+            Response resp = new Response(elementId, true, checkpoint);
             return Util.toResponseString(resp);
         }
         return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);

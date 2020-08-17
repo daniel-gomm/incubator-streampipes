@@ -1,4 +1,4 @@
-package org.apache.streampipes.container.state.serializers;
+package org.apache.streampipes.state.serializers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -18,9 +18,8 @@
 
 package org.apache.streampipes.container.declarer;
 
-import org.apache.streampipes.container.state.rocksdb.PipelineElementDatabase;
-import org.apache.streampipes.container.state.rocksdb.StateDatabase;
-import org.apache.streampipes.model.State.PipelineElementState;
+import org.apache.streampipes.state.rocksdb.PipelineElementDatabase;
+import org.apache.streampipes.model.state.PipelineElementState;
 import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
 import org.apache.streampipes.model.base.NamedStreamPipesEntity;
 import org.apache.streampipes.model.Response;
@@ -41,5 +40,4 @@ public interface InvocableDeclarer<D extends NamedStreamPipesEntity, I extends I
 
     Response resume();
 
-    PipelineElementDatabase getDatabase();
 }

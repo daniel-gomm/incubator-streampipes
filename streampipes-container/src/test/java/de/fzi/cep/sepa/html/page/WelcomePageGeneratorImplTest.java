@@ -18,9 +18,8 @@
 
 package de.fzi.cep.sepa.html.page;
 
-import org.apache.streampipes.container.state.rocksdb.PipelineElementDatabase;
-import org.apache.streampipes.container.state.rocksdb.StateDatabase;
-import org.apache.streampipes.model.State.PipelineElementState;
+import org.apache.streampipes.model.state.PipelineElementState;
+import org.apache.streampipes.state.rocksdb.PipelineElementDatabase;
 import org.junit.Test;
 import org.apache.streampipes.container.declarer.DataStreamDeclarer;
 import org.apache.streampipes.container.declarer.SemanticEventProcessingAgentDeclarer;
@@ -125,11 +124,6 @@ public class WelcomePageGeneratorImplTest {
             @Override
             public DataProcessorDescription declareModel() {
                 return new DataProcessorDescription("sepapathName", "sepaname", "sepadescription", "iconUrl");
-            }
-
-            @Override
-            public PipelineElementDatabase getDatabase() {
-                return null;
             }
         };
     }

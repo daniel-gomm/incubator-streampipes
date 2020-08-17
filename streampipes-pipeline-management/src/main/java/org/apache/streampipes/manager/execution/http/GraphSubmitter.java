@@ -19,9 +19,7 @@
 package org.apache.streampipes.manager.execution.http;
 
 import com.google.gson.Gson;
-import org.apache.streampipes.manager.state.checkpointing.BackendCheckpointingWorker;
-import org.apache.streampipes.manager.state.rocksdb.BackendStateDatabase;
-import org.apache.streampipes.model.State.PipelineElementState;
+import org.apache.streampipes.model.state.PipelineElementState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.streampipes.model.SpDataSet;

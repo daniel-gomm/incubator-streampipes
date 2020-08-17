@@ -1,6 +1,6 @@
 package org.apache.streampipes.wrapper.runtime;
 
-import org.apache.streampipes.container.state.StateHandler;
+import org.apache.streampipes.state.handling.StateHandler;
 import org.apache.streampipes.wrapper.params.binding.EventProcessorBindingParams;
 
 public abstract class StatefulEventProcessor <B extends EventProcessorBindingParams> implements EventProcessor<B> {

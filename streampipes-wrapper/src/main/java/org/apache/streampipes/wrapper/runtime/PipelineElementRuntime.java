@@ -20,7 +20,7 @@ package org.apache.streampipes.wrapper.runtime;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
-import org.apache.streampipes.model.State.PipelineElementState;
+import org.apache.streampipes.model.state.PipelineElementState;
 
 public abstract class PipelineElementRuntime {
 

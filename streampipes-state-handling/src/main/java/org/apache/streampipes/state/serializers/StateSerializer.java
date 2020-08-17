@@ -1,4 +1,4 @@
-package org.apache.streampipes.container.state.serializers;
+package org.apache.streampipes.state.serializers;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;

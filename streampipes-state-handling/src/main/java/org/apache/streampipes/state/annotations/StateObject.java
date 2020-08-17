@@ -1,4 +1,4 @@
-package org.apache.streampipes.container.state.annotations;
+package org.apache.streampipes.state.annotations;
 
 
 import java.lang.annotation.ElementType;

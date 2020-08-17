@@ -24,8 +24,8 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.entity.ContentType;
-import org.apache.streampipes.model.State.PipelineElementState;
-import org.apache.streampipes.model.State.StatefulPayload;
+import org.apache.streampipes.model.state.PipelineElementState;
+import org.apache.streampipes.model.state.StatefulPayload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.streampipes.commons.Utils;
@@ -89,7 +89,7 @@ public class HttpRequestBuilder {
       Response httpResp = Request.Get(belongsTo).connectTimeout(10000).execute();
       return handleResponse(httpResp);
     } catch (Exception e) {
-      LOG.error("Could get state of " + belongsTo, e.getMessage());
+      LOG.error("Could not get state of " + belongsTo, e.getMessage());
       return new PipelineElementStatus(belongsTo, payload.getName(), false, e.getMessage());
     }
   }
