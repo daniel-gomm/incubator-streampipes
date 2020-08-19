@@ -92,4 +92,9 @@ public class StandaloneExternalEventSinkRuntime<B extends EventSinkBindingParams
   public void resume() throws SpRuntimeException {
     //TODO
   }
+
+  @Override
+  public void reprocess(Map<String, Object> rawEvent, String sourceInfo) throws SpRuntimeException {
+
+  }
 }

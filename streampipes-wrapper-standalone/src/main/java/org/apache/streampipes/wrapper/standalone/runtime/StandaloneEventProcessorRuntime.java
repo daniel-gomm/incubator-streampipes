@@ -25,6 +25,7 @@ import org.apache.streampipes.model.graph.DataProcessorInvocation;
 import org.apache.streampipes.wrapper.context.EventProcessorRuntimeContext;
 import org.apache.streampipes.wrapper.params.binding.EventProcessorBindingParams;
 import org.apache.streampipes.wrapper.params.runtime.EventProcessorRuntimeParams;
+import org.apache.streampipes.wrapper.routing.DiscardingOutputCollector;
 import org.apache.streampipes.wrapper.routing.SpInputCollector;
 import org.apache.streampipes.wrapper.routing.SpOutputCollector;
 import org.apache.streampipes.wrapper.runtime.EventProcessor;
@@ -39,6 +40,8 @@ import java.util.function.Supplier;
 public class StandaloneEventProcessorRuntime<B extends EventProcessorBindingParams> extends
         StandalonePipelineElementRuntime<B, DataProcessorInvocation,
                 EventProcessorRuntimeParams<B>, EventProcessorRuntimeContext, EventProcessor<B>> {
+
+  private DiscardingOutputCollector discarder = new DiscardingOutputCollector();
 
   public StandaloneEventProcessorRuntime(Supplier<EventProcessor<B>> supplier,
                                          EventProcessorRuntimeParams<B> params) {
@@ -167,4 +170,8 @@ public class StandaloneEventProcessorRuntime<B extends EventProcessorBindingPara
     }
   }
 
+  @Override
+  public void reprocess(Map<String, Object> rawEvent, String sourceInfo) throws SpRuntimeException {
+    getEngine().onEvent(params.makeEvent(rawEvent, sourceInfo), discarder);
+  }
 }

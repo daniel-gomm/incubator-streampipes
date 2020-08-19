@@ -191,4 +191,11 @@ public class Operations {
     return status;
   }
 
+  public static PipelineOperationStatus migrateFailed(Pipeline pipeline, String nodes){
+    PipelineExecutor pe = new PipelineExecutor(pipeline,true, true, true);
+    PipelineOperationStatus status = pe.migrateFailed(nodes);
+    new PipelineStorageService(pipeline).updatePipeline();
+    return status;
+  }
+
 }

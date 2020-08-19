@@ -24,4 +24,6 @@ import java.util.Map;
 public interface RawDataProcessor {
 
   void process(Map<String, Object> rawEvent, String sourceInfo) throws SpRuntimeException;
+
+  void reprocess(Map<String, Object> rawEvent, String sourceInfo) throws SpRuntimeException;
 }

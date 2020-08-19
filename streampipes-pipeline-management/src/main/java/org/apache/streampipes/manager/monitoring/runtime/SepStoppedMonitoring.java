@@ -132,6 +132,11 @@ public class SepStoppedMonitoring implements EpRuntimeMonitoring<DataSourceDescr
 
     }
 
+    @Override
+    public void onEventReprocess(byte[] event) {
+      //TODO assess if implementation is needed
+    }
+
   }
 
   @Override

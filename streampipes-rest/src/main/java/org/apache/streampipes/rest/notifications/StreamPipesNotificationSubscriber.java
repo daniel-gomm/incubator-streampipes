@@ -30,6 +30,10 @@ public class StreamPipesNotificationSubscriber extends AbstractNotificationSubsc
   public void onEvent(byte[] notificationMessage) {
     Notification notification = gson.fromJson(new String(notificationMessage), Notification.class);
     storeNotification(notification);
+  }
 
+  @Override
+  public void onEventReprocess(byte[] event) {
+    //TODO assess if implementation needed
   }
 }

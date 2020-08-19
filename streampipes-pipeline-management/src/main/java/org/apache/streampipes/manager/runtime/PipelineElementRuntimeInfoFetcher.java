@@ -71,6 +71,11 @@ public enum PipelineElementRuntimeInfoFetcher {
           e.printStackTrace();
         }
       }
+
+      @Override
+      public void onEventReprocess(byte[] event) {
+        //TODO assess if implementation is needed
+      }
     });
 
     while (result[0] == null) {
@@ -120,6 +125,11 @@ public enum PipelineElementRuntimeInfoFetcher {
         } catch (SpRuntimeException e) {
           e.printStackTrace();
         }
+      }
+
+      @Override
+      public void onEventReprocess(byte[] event) {
+        //TODO assess if implementation is needed
       }
     });
 

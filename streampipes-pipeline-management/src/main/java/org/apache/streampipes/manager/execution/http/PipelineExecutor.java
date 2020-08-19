@@ -23,6 +23,7 @@ import org.apache.streampipes.manager.checkpointing.BackendCheckpointingWorker;
 import org.apache.streampipes.model.state.PipelineElementState;
 import org.apache.streampipes.state.database.DatabasesSingleton;
 import org.apache.streampipes.state.rocksdb.PipelineElementDatabase;
+import org.eclipse.rdf4j.query.algebra.Str;
 import org.lightcouch.DocumentConflictException;
 import org.apache.streampipes.manager.execution.status.PipelineStatusManager;
 import org.apache.streampipes.manager.execution.status.SepMonitoringManager;
@@ -223,22 +224,8 @@ public class PipelineExecutor {
 
     //try to start PEs as new Elements
     //Change Pipeline Description
-    for (DataProcessorInvocation sepa : this.pipeline.getSepas()){
-      for(Element ele : elements) {
-        if (sepa.getElementId().equals(ele.oldElement)) {
-          sepa.setElementId(ele.newElement);
-          sepa.setBelongsTo(ele.newElement.substring(0, ele.newElement.lastIndexOf("/")));
-        };
-      }
-    }
-    for(InvocableStreamPipesEntity g : onlyMigrate){
-      for(Element ele :elements){
-        if(g.getElementId().equals(ele.oldElement)){
-          g.setElementId(ele.newElement);
-          g.setBelongsTo(ele.newElement.substring(0, ele.newElement.lastIndexOf("/")));
-        }
-      }
-    }
+    changePipelineDescription(elements, true);
+    changeGraphDescription(elements, true, onlyMigrate);
     TemporaryGraphStorage.graphStorage.put(pipeline.getPipelineId(), graphs);
 
     //Start PE with received states
@@ -254,25 +241,10 @@ public class PipelineExecutor {
     //handle the migration outcome
     if(statusInvoc.isSuccess()){
       //Stop/discard old Elements
-      //TODO enhance later
-      for(InvocableStreamPipesEntity g : onlyMigrate){
-        for(Element ele :elements){
-          if(g.getElementId().equals(ele.newElement)){
-            g.setElementId(ele.oldElement);
-            g.setBelongsTo(ele.oldElement.substring(0, ele.oldElement.lastIndexOf("/")));
-          }
-        }
-      }
+      changeGraphDescription(elements, false, onlyMigrate);
       PipelineOperationStatus detach = new GraphSubmitter(pipeline.getPipelineId(),
               pipeline.getName(), onlyMigrate, dataSets).detachGraphs();
-      for(InvocableStreamPipesEntity g : onlyMigrate){
-        for(Element ele :elements){
-          if(g.getElementId().equals(ele.oldElement)){
-            g.setElementId(ele.newElement);
-            g.setBelongsTo(ele.newElement.substring(0, ele.newElement.lastIndexOf("/")));
-          }
-        }
-      }
+      changeGraphDescription(elements, true, onlyMigrate);
       if(detach.isSuccess()){
         storeInvocationGraphs(pipeline.getPipelineId(), graphs, dataSets);
         PipelineStatusManager.addPipelineStatus(pipeline.getPipelineId(),
@@ -286,39 +258,118 @@ public class PipelineExecutor {
       return statusInvoc;
     }else{
       //Change back the description
-      for (DataProcessorInvocation sepa : this.pipeline.getSepas()){
-        for(Element ele : elements) {
-          if (sepa.getElementId().equals(ele.newElement)) {
-            sepa.setElementId(ele.oldElement);
-            sepa.setBelongsTo(ele.oldElement.substring(0, ele.oldElement.lastIndexOf("/")));
-          };
-        }
-        for(InvocableStreamPipesEntity g : onlyMigrate){
-          for(Element ele :elements){
-            if(g.getElementId().equals(ele.newElement)){
-              g.setElementId(ele.oldElement);
-              g.setBelongsTo(ele.oldElement.substring(0, ele.oldElement.lastIndexOf("/")));
-            }
-          }
-        }
-        TemporaryGraphStorage.graphStorage.put(pipeline.getPipelineId(), graphs);
-      }
+      changePipelineDescription(elements, false);
+      changeGraphDescription(elements, false, onlyMigrate);
+      TemporaryGraphStorage.graphStorage.put(pipeline.getPipelineId(), graphs);
       //Resume processing
       PipelineOperationStatus statusResume = new GraphSubmitter(pipeline.getPipelineId(),
               pipeline.getName(), onlyMigrate, dataSets).resume();
       if(statusResume.isSuccess()){
         statusResume.setSuccess(false);
         statusResume.setTitle("Resumed on old Elements, migration unsuccessful.");
-      }//TODO else
+      }else{
+        statusResume.setTitle("Migration unsuccessful, could not resume on old elements.");
+      }
       graphs.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
       graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
       return statusResume;
     }
   }
 
+  public PipelineOperationStatus migrateFailed(String elementList){
+    List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
+    List<SpDataSet> dataSets = TemporaryGraphStorage.datasetStorage.get(pipeline.getPipelineId());
+
+    Gson gson =  new Gson();
+    Element[] elements = gson.fromJson(elementList, Element[].class);
+
+    ArrayList<InvocableStreamPipesEntity> onlyMigrate = new ArrayList<InvocableStreamPipesEntity>();
+    //get List of PEs to migrate
+    for (InvocableStreamPipesEntity sepa : graphs){
+      for (Element ele : elements){
+        if (sepa.getElementId().equals(ele.oldElement)){
+          onlyMigrate.add(sepa);
+        };
+      }
+    }
+
+    //Unregister Databases in Backend
+    graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getElementId()));
+
+    HashMap<String, PipelineElementState> states = new HashMap<>();
+
+    for(Element e : elements){
+      PipelineElementState state = gson.fromJson(DatabasesSingleton.INSTANCE.getDatabase(e.oldElement).getLast(), PipelineElementState.class);
+      states.put(e.oldElement.split("/")[e.oldElement.split("/").length-1], state);
+    }
+
+    //try to start PEs as new Elements
+    //Change Pipeline Description
+    changePipelineDescription(elements, true);
+    changeGraphDescription(elements, true, onlyMigrate);
+
+    TemporaryGraphStorage.graphStorage.put(pipeline.getPipelineId(), graphs);
+
+    //Start PE with received states
+    List<InvocableStreamPipesEntity> decryptedGraphs = decryptSecrets(onlyMigrate);
+
+    onlyMigrate.forEach(g -> g.setStreamRequirements(Arrays.asList()));
+
+    graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
+
+    return new GraphSubmitter(pipeline.getPipelineId(),
+            pipeline.getName(), decryptedGraphs, new ArrayList<SpDataSet>())
+            .invokeGraphs(states);
+    //Handle different cases?
+  }
+
   private class Element{
     String oldElement;
     String newElement;
+  }
+
+  private void changePipelineDescription(Element[] elements, boolean oldToNew){
+    Element[] elementsCopy;
+    if(!oldToNew){
+      elementsCopy = reverse(elements);
+    }else{
+      elementsCopy = elements;
+    }
+    for (DataProcessorInvocation sepa : this.pipeline.getSepas()){
+      for(Element ele : elementsCopy) {
+        if (sepa.getElementId().equals(ele.oldElement)) {
+          sepa.setElementId(ele.newElement);
+          sepa.setBelongsTo(ele.newElement.substring(0, ele.newElement.lastIndexOf("/")));
+        };
+      }
+    }
+  }
+
+  private void changeGraphDescription(Element[] elements, boolean oldToNew, List<InvocableStreamPipesEntity> graph){
+    Element[] elementsCopy;
+    if(!oldToNew){
+      elementsCopy = reverse(elements);
+    }else{
+      elementsCopy = elements;
+    }
+    for(InvocableStreamPipesEntity g : graph){
+      for(Element ele :elementsCopy){
+        if(g.getElementId().equals(ele.oldElement)){
+          g.setElementId(ele.newElement);
+          g.setBelongsTo(ele.newElement.substring(0, ele.newElement.lastIndexOf("/")));
+        }
+      }
+    }
+  }
+
+  private Element[] reverse(Element[] elements){
+    Element[] ret = new Element[elements.length];
+    for(int i = 0; i < elements.length; i++){
+      ret[i].oldElement = elements[i].newElement;
+      ret[i].newElement = elements[i].oldElement;
+    }
+
+    return ret;
   }
 
 }

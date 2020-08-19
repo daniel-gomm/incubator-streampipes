@@ -155,6 +155,8 @@ public class StandaloneEventSinkRuntime<B extends EventSinkBindingParams> extend
     }
   }
 
-
-
+  @Override
+  public void reprocess(Map rawEvent, String sourceInfo) throws SpRuntimeException {
+    getEngine().onEvent(params.makeEvent(rawEvent, sourceInfo));
+  }
 }

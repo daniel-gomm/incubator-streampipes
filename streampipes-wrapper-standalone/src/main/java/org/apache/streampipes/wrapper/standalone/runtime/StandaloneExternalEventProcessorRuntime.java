@@ -93,4 +93,9 @@ public class StandaloneExternalEventProcessorRuntime<B extends EventProcessorBin
   public void resume() throws SpRuntimeException {
     //TODO
   }
+
+  @Override
+  public void reprocess(Map<String, Object> rawEvent, String sourceInfo) throws SpRuntimeException {
+
+  }
 }

@@ -20,6 +20,7 @@ package org.apache.streampipes.messaging.kafka;
 
 import com.google.gson.Gson;
 import org.apache.kafka.clients.consumer.*;
+import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +85,6 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
 
   @Override
   public void run() {
-    //My code
     Properties props = getProperties();
     props.replace("enable.auto.commit", "false");
     props.remove("auto.commit.interval.ms");
@@ -95,84 +95,104 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
       //If no groupId has been provided save the generated ID
       this.groupId = props.get(ConsumerConfig.GROUP_ID_CONFIG).toString();
     }
-    //End of my code
+    ConsumerRecord<String, byte[]> lastRecord = null;
     KafkaConsumer<String, byte[]> kafkaConsumer = new KafkaConsumer<>(props);
-    if (!patternTopic) {
-      kafkaConsumer.subscribe(Collections.singletonList(topic));
-    } else {
-      topic = replaceWildcardWithPatternFormat(topic);
-      kafkaConsumer.subscribe(Pattern.compile(topic), new ConsumerRebalanceListener() {
-        @Override
-        public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-          // TODO
-        }
-
-        @Override
-        public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-          // TODO
-        }
-      });
+    ArrayList<TopicPartition> partitions = new ArrayList<>();
+    for (Map.Entry<Integer, Long> e : startOffsets.entrySet()) {
+      partitions.add(new TopicPartition(topic, e.getKey()));
     }
-    //My code
-    if (!this.startOffsets.isEmpty()){
-      //If an offset has been provided seek the offset to pick up processing from there
-      for(TopicPartition tp : kafkaConsumer.assignment()){
-        if(kafkaConsumer.position(tp) != startOffsets.get(tp.partition())+1){
-          //Need to reprocess events
-          long endOffset = kafkaConsumer.position(tp);
-          kafkaConsumer.seek(tp, startOffsets.get(tp.partition()));
-          while(true){
-            ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(Duration.ofMillis(100));
-            boolean brk = false;
-            for(ConsumerRecord<String, byte[]> record : records){
-              if (record.offset() >= endOffset){
-                brk = true;
+    try{
+      if(!this.startOffsets.isEmpty()){
+        kafkaConsumer.assign(partitions);
+      } else if (!patternTopic) {
+        kafkaConsumer.subscribe(Collections.singletonList(topic));
+      } else {
+        topic = replaceWildcardWithPatternFormat(topic);
+        kafkaConsumer.subscribe(Pattern.compile(topic), new ConsumerRebalanceListener() {
+          @Override
+          public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+            // TODO
+          }
+
+          @Override
+          public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+            // TODO
+          }
+        });
+      }
+      //Reprocess missing events to restore current state
+      if (!this.startOffsets.isEmpty()) {
+        //Manually assign topic partitions
+        Map<TopicPartition, Long> endOffsets = new HashMap<>();
+        for(TopicPartition tp: partitions){
+          endOffsets.put(tp, kafkaConsumer.position(tp));
+        }
+        //If an offset has been provided seek the offset to pick up processing from there
+        for (Map.Entry<TopicPartition, Long> tp : endOffsets.entrySet()) {
+          if (tp.getValue() != startOffsets.get(tp.getKey().partition()) + 1) {
+            //Need to reprocess events
+            long endOffset = tp.getValue();
+            kafkaConsumer.seek(tp.getKey(), startOffsets.get(tp.getKey().partition()));
+            while (true) {
+              ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(Duration.ofMillis(100));
+              boolean brk = false;
+              for (ConsumerRecord<String, byte[]> record : records) {
+                if (record.offset() >= endOffset) {
+                  brk = true;
+                  break;
+                }
+                lastRecord = record;
+                byte[] rec = record.value();
+                eventProcessor.onEventReprocess(rec);
+              }
+              if (brk){
+                kafkaConsumer.commitAsync(Collections.singletonMap(new TopicPartition(topic, lastRecord.partition()), new OffsetAndMetadata(lastRecord.offset() +1)), null);
                 break;
               }
-              byte[] rec = record.value();
-              eventProcessor.onEvent(rec);
-              kafkaConsumer.commitAsync();
             }
-            if(brk)
-              break;
           }
         }
       }
-    }
-    //End of my code
-    while (isRunning) {
-      ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(100);
-      for (ConsumerRecord<String, byte[]> record : records) {
-        byte[] rec = record.value();
-        eventProcessor.onEvent(rec);
-        //My code
-        //save the offset each time an event is processed
-        this.offsets.put(record.partition(), record.offset());
+      System.out.println("Reprocessing done");
+      while (isRunning) {
+        ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(Duration.ofMillis(100));
+        int i = 0;
+        for (ConsumerRecord<String, byte[]> record : records) {
+          byte[] rec = record.value();
+          eventProcessor.onEvent(rec);
+          lastRecord = record;
+          this.offsets.put(record.partition(), record.offset());
+          if(++i%20==0){
+            kafkaConsumer.commitAsync(Collections.singletonMap(new TopicPartition(topic, lastRecord.partition()), new OffsetAndMetadata(lastRecord.offset() +1)), null);
+          }
+        }
         kafkaConsumer.commitAsync();
+        //My code -- check if paused, just paused after all records of last poll have been committed
+        synchronized (this) {
+          while (threadSuspended) {
+            try {
+              wait();
+            } catch (InterruptedException e) {
+              e.printStackTrace();
+            }
+            if (!isRunning) {
+              break;
+            }
+          }
+        }
         //End of my code
       }
-      //My code -- check if paused, just paused after all records of last poll have been committed
-      synchronized (this){
-        while (threadSuspended){
-          try {
-            wait();
-          } catch (InterruptedException e) {
-            e.printStackTrace();
-          }
-          if(!isRunning){
-            break;
-          }
-        }
-      }
-      //End of my code
+    }catch (Exception e){
+      e.printStackTrace();
     }
-    this.isFinished = true;
-    LOG.info("Closing Kafka Consumer.");
-    kafkaConsumer.commitSync();
-    kafkaConsumer.close();
-    //My code
-    synchronized (this){
-      notifyAll();
+    finally {
+      this.isFinished = true;
+      LOG.info("Closing Kafka Consumer.");
+      kafkaConsumer.commitSync(Collections.singletonMap(new TopicPartition(topic, lastRecord.partition()), new OffsetAndMetadata(lastRecord.offset() +1)), Duration.ofMillis(1000L));
+      kafkaConsumer.close();
+      synchronized (this) {
+        notifyAll();
+      }
     }
     //End of my code
   }

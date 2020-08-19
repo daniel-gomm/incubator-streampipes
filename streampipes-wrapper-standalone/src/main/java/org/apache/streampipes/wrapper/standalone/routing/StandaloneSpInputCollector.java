@@ -58,6 +58,23 @@ public class StandaloneSpInputCollector<T extends TransportProtocol> extends
   }
 
   @Override
+  public void onEventReprocess(byte[] event) {
+    if (singletonEngine) {
+      reprocess(consumers.get(consumers.keySet().toArray()[0]), event);
+    } else {
+      consumers.forEach((key, value) -> reprocess(value, event));
+    }
+  }
+
+  private void reprocess(RawDataProcessor rawDataProcessor, byte[] event){
+    try {
+      rawDataProcessor.reprocess(dataFormatDefinition.toMap(event), getTopic());
+    } catch (SpRuntimeException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Override
   public void connect() throws SpRuntimeException {
     if (!protocolDefinition.getConsumer().isConnected()) {
       protocolDefinition.getConsumer().connect(transportProtocol,this);
