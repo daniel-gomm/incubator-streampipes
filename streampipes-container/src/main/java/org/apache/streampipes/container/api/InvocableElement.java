@@ -239,14 +239,18 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Path("{elementId}/{runningInstanceId}/checkpoint")
     @Produces(MediaType.APPLICATION_JSON)
     public String getCheckpoint(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
+        try {
+            String checkpoint = DatabasesSingleton.INSTANCE.getDatabase(runningInstanceId).getLast();
 
-        String checkpoint = DatabasesSingleton.INSTANCE.getDatabase(runningInstanceId).getLast();
-
-        if (checkpoint != null) {
-            Response resp = new Response(elementId, true, checkpoint);
-            return Util.toResponseString(resp);
+            if (checkpoint != null) {
+                Response resp = new Response(elementId, true, checkpoint);
+                return Util.toResponseString(resp);
+            } else {
+                return Util.toResponseString(elementId, false, DatabasesSingleton.INSTANCE.getDatabase(runningInstanceId).getLastKey());
+            }
+        }catch (Exception e){
+            return Util.toResponseString(elementId, false, e.getMessage());
         }
-        return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
 
     }
 

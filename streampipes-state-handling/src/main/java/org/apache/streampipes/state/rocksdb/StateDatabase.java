@@ -25,8 +25,6 @@ public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
 
     public ColumnFamilyHandle registerColumnFamily(String elementId) {
         LOG.info("Registering Pipeline Element: " + elementId);
-        //TODO Remove print statement
-        System.out.println(elementId);
         if(path == null){
             LOG.error("Could not register Column Family, path has not been initialized.");
             return null;
@@ -36,7 +34,6 @@ public enum StateDatabase implements KeyValueRepository<byte[], byte[]> {
         }
         try {
             for(ColumnFamilyHandle cfHandle : this.columnFamilyHandles){
-                System.out.println(new String(cfHandle.getName()));
                 if(Arrays.equals(cfHandle.getName(), elementId.getBytes())){
                     return cfHandle;
                 }

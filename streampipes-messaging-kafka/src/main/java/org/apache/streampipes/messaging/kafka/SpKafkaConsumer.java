@@ -137,7 +137,7 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
               ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(Duration.ofMillis(100));
               boolean brk = false;
               for (ConsumerRecord<String, byte[]> record : records) {
-                if (record.offset() >= endOffset) {
+                if (record.offset() >= endOffset-1) {
                   brk = true;
                   break;
                 }

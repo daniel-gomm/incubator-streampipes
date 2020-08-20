@@ -7,6 +7,7 @@ import org.apache.streampipes.state.database.DatabasesSingleton;
 import org.apache.streampipes.state.rocksdb.PipelineElementDatabase;
 import org.apache.streampipes.state.rocksdb.StateDatabase;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -17,7 +18,7 @@ public enum BackendCheckpointingWorker implements Runnable {
     private static volatile boolean isRunning = false;
 
     public void registerPipelineElement(InvocableStreamPipesEntity invoc){
-        registerPipelineElement(invoc, DatabasesSingleton.INSTANCE.getDatabase(invoc.getElementId()), 60000L);
+        registerPipelineElement(invoc, DatabasesSingleton.INSTANCE.getDatabase(invoc.getElementId()), 30000L);
     }
 
     public void registerPipelineElement(InvocableStreamPipesEntity invoc, PipelineElementDatabase db, Long interval){
@@ -28,21 +29,16 @@ public enum BackendCheckpointingWorker implements Runnable {
     }
 
     public void unregisterPipelineElement(String elementId){
-        Map.Entry e = null;
-        for(Map.Entry<Long, TrackedBackendDatabase> entry : invocations.entrySet()){
+        for(Iterator<Map.Entry<Long, TrackedBackendDatabase>> iter = invocations.entrySet().iterator(); iter.hasNext();){
+            Map.Entry<Long, TrackedBackendDatabase> entry = iter.next();
             if(elementId.equals(entry.getValue().elementID))
-                e = entry;
+                iter.remove();
         }
-        if(e != null)
-            invocations.remove(e.getKey(), e.getValue());
 
         if(invocations.isEmpty())
             INSTANCE.stopWorker();
     }
 
-    public void updatePipelineElement(){
-        //TODO
-    }
 
     public void startWorker(){
         if(!isRunning){
@@ -79,6 +75,10 @@ public enum BackendCheckpointingWorker implements Runnable {
                         PipelineElementStatus resp = new HttpRequestBuilder(entry.getValue().invocableStreamPipesEntity, entry.getValue().invocableStreamPipesEntity.getElementId() + "/checkpoint").getState();
                         if(resp.isSuccess()){
                             entry.getValue().db.add(resp.getOptionalMessage());
+                        }else if(resp.getOptionalMessage() != null && resp.getOptionalMessage().startsWith(entry.getValue().elementID)){
+                            //TODO Handle the case that the latest state has already been fetched (if it is not present, get it from the latest checkpoint id)
+                        }else{
+                            //TODO Handle the case that the state was unavailable (retry or what?)
                         }
                         //Update the key of the entry
                         invocations.remove(entry.getKey(), entry.getValue());

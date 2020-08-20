@@ -15,7 +15,7 @@ public enum CheckpointingWorker implements Runnable{
     private static volatile boolean isRunning = false;
 
     public static void registerPipelineElement(InvocableDeclarer invocation, String elementId){
-        registerPipelineElement(invocation, 15000L, elementId);
+        registerPipelineElement(invocation, 10000L, elementId);
     }
 
     public static void registerPipelineElement(InvocableDeclarer invocation, Long interval, String elementId){

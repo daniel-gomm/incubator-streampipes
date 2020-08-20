@@ -216,7 +216,7 @@ public class PipelineExecutor {
     }
 
     //Unregister Databases in Backend
-    graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getUri()));
+    onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getUri()));
     //Get states of these pipeline Elements
     Map<String, PipelineElementState> states = new GraphSubmitter(pipeline.getPipelineId(),
             pipeline.getName(), onlyMigrate, dataSets).getStates();
@@ -253,8 +253,8 @@ public class PipelineExecutor {
         statusInvoc.setTitle("Failed to detach old Elements.");
         statusInvoc.setSuccess(false);
       }
-      graphs.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
-      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
+      onlyMigrate.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
+      onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
       return statusInvoc;
     }else{
       //Change back the description
@@ -270,8 +270,8 @@ public class PipelineExecutor {
       }else{
         statusResume.setTitle("Migration unsuccessful, could not resume on old elements.");
       }
-      graphs.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
-      graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
+      onlyMigrate.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
+      onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
       return statusResume;
     }
   }
@@ -293,8 +293,8 @@ public class PipelineExecutor {
       }
     }
 
-    //Unregister Databases in Backend
-    graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getElementId()));
+    //Unregister Databases from checkpointing
+    onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getElementId()));
 
     HashMap<String, PipelineElementState> states = new HashMap<>();
 
@@ -310,16 +310,19 @@ public class PipelineExecutor {
 
     TemporaryGraphStorage.graphStorage.put(pipeline.getPipelineId(), graphs);
 
-    //Start PE with received states
+    //Start PE with states
     List<InvocableStreamPipesEntity> decryptedGraphs = decryptSecrets(onlyMigrate);
 
     onlyMigrate.forEach(g -> g.setStreamRequirements(Arrays.asList()));
 
-    graphs.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
-
-    return new GraphSubmitter(pipeline.getPipelineId(),
+    PipelineOperationStatus status = new GraphSubmitter(pipeline.getPipelineId(),
             pipeline.getName(), decryptedGraphs, new ArrayList<SpDataSet>())
             .invokeGraphs(states);
+
+    onlyMigrate.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
+    onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
+
+    return status;
     //Handle different cases?
   }
 
