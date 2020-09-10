@@ -1,0 +1,2 @@
+org.apache.streampipes.examples.pe.processor.counter.title=Counter
+org.apache.streampipes.examples.pe.processor.counter.description=A processor that counts events

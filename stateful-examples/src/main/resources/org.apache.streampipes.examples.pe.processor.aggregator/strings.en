@@ -1,0 +1,8 @@
+org.apache.streampipes.examples.pe.processor.aggregator.title=Aggregator
+org.apache.streampipes.examples.pe.processor.aggregator.description=Aggregates a custom number of events.
+
+window-size.title=Window Size
+window-size.description=Size of the window over which the aggregation is performed.
+
+state-size.title=State Size
+state-size.description=Size of the artificially added state.

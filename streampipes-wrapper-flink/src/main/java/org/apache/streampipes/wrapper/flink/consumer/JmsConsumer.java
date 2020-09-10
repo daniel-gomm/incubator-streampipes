@@ -56,6 +56,11 @@ public class JmsConsumer implements SourceFunction<Map<String, Object>>, Seriali
       public void onEvent(byte[] event) {
         queue.add(event);
       }
+
+      @Override
+      public void onEventReprocess(byte[] event) {
+        //TODO
+      }
     });
 
     while (isRunning) {

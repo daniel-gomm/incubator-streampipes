@@ -16,22 +16,26 @@
  *
  */
 
-package org.apache.streampipes.manager.checkpointing;
+package org.apache.streampipes.examples.pe.processor.aggregator;
 
-import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
-import org.apache.streampipes.state.database.DatabasesSingleton;
-import org.apache.streampipes.state.rocksdb.PipelineElementDatabase;
+import org.apache.streampipes.model.graph.DataProcessorInvocation;
+import org.apache.streampipes.wrapper.params.binding.EventProcessorBindingParams;
 
-public class TrackedBackendDatabase {
-    String elementID;
-    InvocableStreamPipesEntity invocableStreamPipesEntity;
-    Long interval;
-    PipelineElementDatabase db;
-    public TrackedBackendDatabase(InvocableStreamPipesEntity invoc, PipelineElementDatabase db, Long interval){
-        this.elementID = invoc.getElementId();
-        this.invocableStreamPipesEntity = invoc;
-        this.interval = interval;
-        this.db = db;
-        this.db = DatabasesSingleton.INSTANCE.getDatabase(invoc.getElementId());
-    }
+public class AggregatorParameters extends EventProcessorBindingParams {
+
+  private int stateSize;
+  private int windowSize;
+
+  public AggregatorParameters(DataProcessorInvocation graph, int windowSize, int stateSize) {
+    super(graph);
+    this.windowSize = windowSize;
+    this.stateSize = stateSize;
+  }
+
+  public int getWindow_size(){
+    return this.windowSize;
+  }
+
+  public int getStateSize(){return this.stateSize;}
+
 }

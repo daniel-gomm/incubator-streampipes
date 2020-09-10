@@ -80,10 +80,5 @@
 			<artifactId>junit</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.rocksdb</groupId>
-			<artifactId>rocksdbjni</artifactId>
-			<version>5.15.10</version>
-		</dependency>
 	</dependencies>
 </project>
