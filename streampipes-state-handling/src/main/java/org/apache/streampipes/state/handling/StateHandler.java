@@ -19,6 +19,7 @@
 package org.apache.streampipes.state.handling;
 
 import com.google.common.reflect.TypeToken;
+import org.apache.streampipes.commons.evaluation.EvaluationLogger;
 import org.apache.streampipes.state.annotations.StateObject;
 import org.apache.streampipes.state.serializers.GsonSerializer;
 import org.apache.streampipes.state.serializers.StateSerializer;
@@ -40,7 +41,7 @@ public class StateHandler {
 
     public StateHandler(Object o, StateSerializer serializer){
         this.obj = o;
-        this.fields = new ArrayList<Field>(Arrays.asList(o.getClass().getFields()));
+        this.fields = new ArrayList<>(Arrays.asList(o.getClass().getFields()));
         this.serializer = serializer;
         //Only keep marked fields as part of the State
         for(Field f : o.getClass().getFields()){
@@ -49,7 +50,7 @@ public class StateHandler {
             }
         }
 
-        this.fieldsMap = new HashMap<String, Field>();
+        this.fieldsMap = new HashMap<>();
         //Make a map of all fields with their respective Names
         for(Field f: fields){
             this.fieldsMap.put(f.getName(), f);
@@ -72,15 +73,19 @@ public class StateHandler {
     }
 
     public String getState()  {
+        EvaluationLogger.log("timingsCheckpointing", "beforeSerialization;" + System.currentTimeMillis());
         Map<String, ClassfulObject> list = new HashMap<>();
         for(Field f : this.fields){
             try {
-                ClassfulObject o = new ClassfulObject(f.get(this.obj), this.serializer);
-                list.put(f.getName(), o);
+                if(f != null){
+                    ClassfulObject o = new ClassfulObject(f.get(this.obj), this.serializer);
+                    list.put(f.getName(), o);
+                }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
         }
+        EvaluationLogger.log("timingsCheckpointing", "afterSerialization;" + System.currentTimeMillis());
         return serializer.serialize(list);
     }
 }

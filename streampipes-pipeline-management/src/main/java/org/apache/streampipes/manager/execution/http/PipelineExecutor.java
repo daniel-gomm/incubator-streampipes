@@ -19,6 +19,7 @@
 package org.apache.streampipes.manager.execution.http;
 
 import com.google.gson.Gson;
+import org.apache.streampipes.commons.evaluation.EvaluationLogger;
 import org.apache.streampipes.manager.checkpointing.BackendCheckpointingWorker;
 import org.apache.streampipes.model.state.PipelineElementState;
 import org.apache.streampipes.state.database.DatabasesSingleton;
@@ -51,6 +52,8 @@ public class PipelineExecutor {
   private boolean visualize;
   private boolean storeStatus;
   private boolean monitor;
+
+  private static int evaluationRuns = 0;
 
   public PipelineExecutor(Pipeline pipeline, boolean visualize, boolean storeStatus,
                           boolean monitor) {
@@ -188,6 +191,14 @@ public class PipelineExecutor {
   }
 
   public PipelineOperationStatus migrate(String elementList){
+    PipelineOperationStatus status = migrateLog(elementList);
+    EvaluationLogger.writeToFiles("migrate");
+    return status;
+  }
+
+  public PipelineOperationStatus migrateLog(String elementList){
+    EvaluationLogger.logResources(200L);
+    EvaluationLogger.log("timing", System.currentTimeMillis());
     List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
     List<SpDataSet> dataSets = TemporaryGraphStorage.datasetStorage.get(pipeline.getPipelineId());
 
@@ -205,7 +216,7 @@ public class PipelineExecutor {
       }
     }
 
-
+    EvaluationLogger.log("timing", System.currentTimeMillis());
     //pause Pipeline Elements that should be migrated
     PipelineOperationStatus status = new GraphSubmitter(pipeline.getPipelineId(),
             pipeline.getName(), onlyMigrate, dataSets).pause();
@@ -214,13 +225,14 @@ public class PipelineExecutor {
       status.setTitle("Could not pause the Pipeline Elements.");
       return status;
     }
-
+    EvaluationLogger.log("timing", System.currentTimeMillis());
     //Unregister Databases in Backend
     onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getUri()));
     //Get states of these pipeline Elements
+    EvaluationLogger.log("timing", System.currentTimeMillis());
     Map<String, PipelineElementState> states = new GraphSubmitter(pipeline.getPipelineId(),
             pipeline.getName(), onlyMigrate, dataSets).getStates();
-
+    EvaluationLogger.log("timing", System.currentTimeMillis());
 
     //try to start PEs as new Elements
     //Change Pipeline Description
@@ -232,11 +244,11 @@ public class PipelineExecutor {
     List<InvocableStreamPipesEntity> decryptedGraphs = decryptSecrets(onlyMigrate);
 
     onlyMigrate.forEach(g -> g.setStreamRequirements(Arrays.asList()));
-
+    EvaluationLogger.log("timing", System.currentTimeMillis());
     PipelineOperationStatus statusInvoc = new GraphSubmitter(pipeline.getPipelineId(),
             pipeline.getName(), decryptedGraphs, new ArrayList<SpDataSet>())
             .invokeGraphs(states);
-
+    EvaluationLogger.log("timing", System.currentTimeMillis());
 
     //handle the migration outcome
     if(statusInvoc.isSuccess()){
@@ -255,6 +267,7 @@ public class PipelineExecutor {
       }
       onlyMigrate.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
       onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
+      EvaluationLogger.log("timing", System.currentTimeMillis());
       return statusInvoc;
     }else{
       //Change back the description
@@ -277,6 +290,15 @@ public class PipelineExecutor {
   }
 
   public PipelineOperationStatus migrateFailed(String elementList){
+    PipelineOperationStatus status = migrateFailedLog(elementList);
+    EvaluationLogger.writeToFiles("migrateFailed");
+    return status;
+  }
+
+
+  public PipelineOperationStatus migrateFailedLog(String elementList){
+    EvaluationLogger.logResources(200L);
+    EvaluationLogger.log("timing", System.currentTimeMillis());
     List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
     List<SpDataSet> dataSets = TemporaryGraphStorage.datasetStorage.get(pipeline.getPipelineId());
 
@@ -297,7 +319,7 @@ public class PipelineExecutor {
     onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getElementId()));
 
     HashMap<String, PipelineElementState> states = new HashMap<>();
-
+    EvaluationLogger.log("timing", System.currentTimeMillis());
     for(Element e : elements){
       PipelineElementState state = gson.fromJson(DatabasesSingleton.INSTANCE.getDatabase(e.oldElement).getLast(), PipelineElementState.class);
       states.put(e.oldElement.split("/")[e.oldElement.split("/").length-1], state);
@@ -314,14 +336,14 @@ public class PipelineExecutor {
     List<InvocableStreamPipesEntity> decryptedGraphs = decryptSecrets(onlyMigrate);
 
     onlyMigrate.forEach(g -> g.setStreamRequirements(Arrays.asList()));
-
+    EvaluationLogger.log("timing", System.currentTimeMillis());
     PipelineOperationStatus status = new GraphSubmitter(pipeline.getPipelineId(),
             pipeline.getName(), decryptedGraphs, new ArrayList<SpDataSet>())
             .invokeGraphs(states);
-
+    EvaluationLogger.log("timing", System.currentTimeMillis());
     onlyMigrate.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
     onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
-
+    EvaluationLogger.log("timing", System.currentTimeMillis());
     return status;
     //Handle different cases?
   }

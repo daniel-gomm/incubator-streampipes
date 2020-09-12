@@ -20,6 +20,7 @@ package org.apache.streampipes.container.api;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import org.apache.streampipes.commons.evaluation.EvaluationLogger;
 import org.apache.streampipes.container.checkpointing.CheckpointingWorker;
 import org.apache.streampipes.model.state.StatefulPayload;
 import org.apache.streampipes.state.database.DatabasesSingleton;
@@ -64,7 +65,8 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public String invokeRuntime(@PathParam("elementId") String elementId, String payload) {
-
+        EvaluationLogger.logResources(200L);
+        EvaluationLogger.log("timingsPE", "invocation;" + System.currentTimeMillis());
         //My code
         String originalPayload = payload;
         StatefulPayload load = null;
@@ -160,9 +162,10 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Path("{elementId}/{runningInstanceId}")
     @Produces(MediaType.APPLICATION_JSON)
     public String detach(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId) {
-
+        EvaluationLogger.log("timingsPE", "detach;" + System.currentTimeMillis());
         InvocableDeclarer runningInstance = RunningInstances.INSTANCE.getInvocation(runningInstanceId);
-
+        //Is this the right thing?
+        EvaluationLogger.writeToFiles(runningInstance.declareModel().getElementId());
         if (runningInstance != null) {
             Response resp = runningInstance.detachRuntime(runningInstanceId);
 
@@ -188,11 +191,12 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Path("{elementId}/{runningInstanceId}/state")
     @Produces(MediaType.APPLICATION_JSON)
     public String getState(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
-
+        EvaluationLogger.log("timingsPE", "getState;" + System.currentTimeMillis());
         InvocableDeclarer runningInstance = RunningInstances.INSTANCE.getInvocation(runningInstanceId);
 
         if (runningInstance != null) {
             Response resp = new Response(elementId, true, runningInstance.getState());
+            EvaluationLogger.log("timingsPE", "returnedState;" + System.currentTimeMillis());
             return Util.toResponseString(resp);
         }
         return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
