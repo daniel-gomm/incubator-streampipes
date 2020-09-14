@@ -33,7 +33,7 @@ public enum CheckpointingWorker implements Runnable{
     private static volatile boolean isRunning = false;
 
     public static void registerPipelineElement(InvocableDeclarer invocation, String elementId){
-        registerPipelineElement(invocation, 10000L, elementId);
+        registerPipelineElement(invocation, 3000L, elementId);
     }
 
     public static void registerPipelineElement(InvocableDeclarer invocation, Long interval, String elementId){
@@ -91,7 +91,9 @@ public enum CheckpointingWorker implements Runnable{
                 try {
                     //Only start checkpointing if the PE is not unregistered yet
                     if (invocations.containsValue(entry.getValue())) {
-                        entry.getValue().db.add(entry.getValue().invocableDeclarer.getState());
+                        String state = entry.getValue().invocableDeclarer.getState();
+                        System.out.println(state);
+                        entry.getValue().db.add(state);
                     }
                 }catch(Exception e){
                     e.printStackTrace();

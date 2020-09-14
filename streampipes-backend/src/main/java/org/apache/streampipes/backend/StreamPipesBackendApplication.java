@@ -51,7 +51,7 @@ public class StreamPipesBackendApplication {
 
   public static void main(String[] args) {
     System.setProperty("org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH", "true");
-    StateDatabase.DATABASE.initialize("/tmp/streampipes/rocksdb/backend");
+    StateDatabase.DATABASE.initialize(System.getProperty("user.home") + "/.streampipes/rocksdb/backend");
     SpringApplication.run(StreamPipesBackendApplication.class, args);
   }
 

@@ -54,7 +54,7 @@ public abstract class StandaloneModelSubmitter extends ModelSubmitter {
         SpringApplication app = new SpringApplication(StandaloneModelSubmitter.class);
         app.setDefaultProperties(Collections.singletonMap("server.port", peConfig.getPort()));
         app.run();
-        StateDatabase.DATABASE.initialize("/tmp/streampipes/rocksdb/pipelineelement" + peConfig.getPort());
+        StateDatabase.DATABASE.initialize( System.getProperty("user.home") + "/.streampipes/rocksdb/pipelineelement" + peConfig.getPort());
         ConsulUtil.registerPeService(
                 peConfig.getId(),
                 peConfig.getHost(),

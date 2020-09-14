@@ -66,7 +66,7 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Produces(MediaType.APPLICATION_JSON)
     public String invokeRuntime(@PathParam("elementId") String elementId, String payload) {
         EvaluationLogger.logResources(200L);
-        EvaluationLogger.log("timingsPE", "invocation;" + System.currentTimeMillis());
+        EvaluationLogger.log("timingsPE", "invocation" , System.currentTimeMillis());
         //My code
         String originalPayload = payload;
         StatefulPayload load = null;
@@ -162,10 +162,10 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Path("{elementId}/{runningInstanceId}")
     @Produces(MediaType.APPLICATION_JSON)
     public String detach(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId) {
-        EvaluationLogger.log("timingsPE", "detach;" + System.currentTimeMillis());
+        EvaluationLogger.log("timingsPE", "detach" , System.currentTimeMillis());
         InvocableDeclarer runningInstance = RunningInstances.INSTANCE.getInvocation(runningInstanceId);
         //Is this the right thing?
-        EvaluationLogger.writeToFiles(runningInstance.declareModel().getElementId());
+        EvaluationLogger.writeToFiles(runningInstance.declareModel().getUri());
         if (runningInstance != null) {
             Response resp = runningInstance.detachRuntime(runningInstanceId);
 
@@ -191,12 +191,12 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Path("{elementId}/{runningInstanceId}/state")
     @Produces(MediaType.APPLICATION_JSON)
     public String getState(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
-        EvaluationLogger.log("timingsPE", "getState;" + System.currentTimeMillis());
+        EvaluationLogger.log("timingsPE", "getState", System.currentTimeMillis());
         InvocableDeclarer runningInstance = RunningInstances.INSTANCE.getInvocation(runningInstanceId);
 
         if (runningInstance != null) {
             Response resp = new Response(elementId, true, runningInstance.getState());
-            EvaluationLogger.log("timingsPE", "returnedState;" + System.currentTimeMillis());
+            EvaluationLogger.log("timingsPE", "returnedState", System.currentTimeMillis());
             return Util.toResponseString(resp);
         }
         return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);

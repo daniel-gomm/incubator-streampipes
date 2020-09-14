@@ -165,7 +165,7 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
     @Produces(MediaType.APPLICATION_JSON)
     @GsonWithIds
     public Response addPipeline(@PathParam("username") String username, Pipeline pipeline) {
-        String pipelineId = UUID.randomUUID().toString();
+        String pipelineId = "evaluationPipeline";//UUID.randomUUID().toString();
         pipeline.setPipelineId(pipelineId);
         pipeline.setRunning(false);
         pipeline.setCreatedByUser(username);

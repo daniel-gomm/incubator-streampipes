@@ -192,13 +192,13 @@ public class PipelineExecutor {
 
   public PipelineOperationStatus migrate(String elementList){
     PipelineOperationStatus status = migrateLog(elementList);
-    EvaluationLogger.writeToFiles("migrate");
+    EvaluationLogger.writeToFiles("backend");
     return status;
   }
 
   public PipelineOperationStatus migrateLog(String elementList){
     EvaluationLogger.logResources(200L);
-    EvaluationLogger.log("timing", System.currentTimeMillis());
+    EvaluationLogger.log("timing", "start", System.currentTimeMillis());
     List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
     List<SpDataSet> dataSets = TemporaryGraphStorage.datasetStorage.get(pipeline.getPipelineId());
 
@@ -215,24 +215,25 @@ public class PipelineExecutor {
         };
       }
     }
-
-    EvaluationLogger.log("timing", System.currentTimeMillis());
+    //Unregister Databases in Backend
+    onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getUri()));
+    EvaluationLogger.log("timing", "beforePause", System.currentTimeMillis());
     //pause Pipeline Elements that should be migrated
     PipelineOperationStatus status = new GraphSubmitter(pipeline.getPipelineId(),
             pipeline.getName(), onlyMigrate, dataSets).pause();
     if(!status.isSuccess()){
       //handle unsuccessful pause
       status.setTitle("Could not pause the Pipeline Elements.");
+      //Unregister Databases in Backend
+      onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
       return status;
     }
-    EvaluationLogger.log("timing", System.currentTimeMillis());
-    //Unregister Databases in Backend
-    onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getUri()));
+    EvaluationLogger.log("timing", "afterPause",System.currentTimeMillis());
     //Get states of these pipeline Elements
-    EvaluationLogger.log("timing", System.currentTimeMillis());
+    EvaluationLogger.log("timing", "beforeGetStates",System.currentTimeMillis());
     Map<String, PipelineElementState> states = new GraphSubmitter(pipeline.getPipelineId(),
             pipeline.getName(), onlyMigrate, dataSets).getStates();
-    EvaluationLogger.log("timing", System.currentTimeMillis());
+    EvaluationLogger.log("timing", "afterGetStates",System.currentTimeMillis());
 
     //try to start PEs as new Elements
     //Change Pipeline Description
@@ -244,11 +245,11 @@ public class PipelineExecutor {
     List<InvocableStreamPipesEntity> decryptedGraphs = decryptSecrets(onlyMigrate);
 
     onlyMigrate.forEach(g -> g.setStreamRequirements(Arrays.asList()));
-    EvaluationLogger.log("timing", System.currentTimeMillis());
+    EvaluationLogger.log("timing", "beforeInvocation", System.currentTimeMillis());
     PipelineOperationStatus statusInvoc = new GraphSubmitter(pipeline.getPipelineId(),
             pipeline.getName(), decryptedGraphs, new ArrayList<SpDataSet>())
             .invokeGraphs(states);
-    EvaluationLogger.log("timing", System.currentTimeMillis());
+    EvaluationLogger.log("timing", "afterInvocation", System.currentTimeMillis());
 
     //handle the migration outcome
     if(statusInvoc.isSuccess()){
@@ -267,7 +268,7 @@ public class PipelineExecutor {
       }
       onlyMigrate.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
       onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
-      EvaluationLogger.log("timing", System.currentTimeMillis());
+      EvaluationLogger.log("timing", "successfulMigration", System.currentTimeMillis());
       return statusInvoc;
     }else{
       //Change back the description
@@ -291,14 +292,14 @@ public class PipelineExecutor {
 
   public PipelineOperationStatus migrateFailed(String elementList){
     PipelineOperationStatus status = migrateFailedLog(elementList);
-    EvaluationLogger.writeToFiles("migrateFailed");
+    EvaluationLogger.writeToFiles("backend");
     return status;
   }
 
 
   public PipelineOperationStatus migrateFailedLog(String elementList){
     EvaluationLogger.logResources(200L);
-    EvaluationLogger.log("timing", System.currentTimeMillis());
+    EvaluationLogger.log("timing", "start", System.currentTimeMillis());
     List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
     List<SpDataSet> dataSets = TemporaryGraphStorage.datasetStorage.get(pipeline.getPipelineId());
 
@@ -319,7 +320,7 @@ public class PipelineExecutor {
     onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getElementId()));
 
     HashMap<String, PipelineElementState> states = new HashMap<>();
-    EvaluationLogger.log("timing", System.currentTimeMillis());
+    EvaluationLogger.log("timing", "beforeGetState", System.currentTimeMillis());
     for(Element e : elements){
       PipelineElementState state = gson.fromJson(DatabasesSingleton.INSTANCE.getDatabase(e.oldElement).getLast(), PipelineElementState.class);
       states.put(e.oldElement.split("/")[e.oldElement.split("/").length-1], state);
@@ -336,14 +337,14 @@ public class PipelineExecutor {
     List<InvocableStreamPipesEntity> decryptedGraphs = decryptSecrets(onlyMigrate);
 
     onlyMigrate.forEach(g -> g.setStreamRequirements(Arrays.asList()));
-    EvaluationLogger.log("timing", System.currentTimeMillis());
+    EvaluationLogger.log("timing", "beforeInvocation", System.currentTimeMillis());
     PipelineOperationStatus status = new GraphSubmitter(pipeline.getPipelineId(),
             pipeline.getName(), decryptedGraphs, new ArrayList<SpDataSet>())
             .invokeGraphs(states);
-    EvaluationLogger.log("timing", System.currentTimeMillis());
+    EvaluationLogger.log("timing", "afterInvocation", System.currentTimeMillis());
     onlyMigrate.forEach(g -> DatabasesSingleton.INSTANCE.addNew(g.getElementId()));
     onlyMigrate.forEach(g -> BackendCheckpointingWorker.INSTANCE.registerPipelineElement(g));
-    EvaluationLogger.log("timing", System.currentTimeMillis());
+    EvaluationLogger.log("timing", "end", System.currentTimeMillis());
     return status;
     //Handle different cases?
   }
@@ -378,7 +379,7 @@ public class PipelineExecutor {
       elementsCopy = elements;
     }
     for(InvocableStreamPipesEntity g : graph){
-      for(Element ele :elementsCopy){
+      for(Element ele : elementsCopy){
         if(g.getElementId().equals(ele.oldElement)){
           g.setElementId(ele.newElement);
           g.setBelongsTo(ele.newElement.substring(0, ele.newElement.lastIndexOf("/")));
@@ -390,6 +391,7 @@ public class PipelineExecutor {
   private Element[] reverse(Element[] elements){
     Element[] ret = new Element[elements.length];
     for(int i = 0; i < elements.length; i++){
+      ret[i] = new Element();
       ret[i].oldElement = elements[i].newElement;
       ret[i].newElement = elements[i].oldElement;
     }

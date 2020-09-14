@@ -90,6 +90,7 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
     props.remove("auto.commit.interval.ms");
     if (this.groupId != null){
       //If a groupId has been provided set it in the config
+      System.out.println("Registered with groupId: " + this.groupId);
       props.replace(ConsumerConfig.GROUP_ID_CONFIG, this.groupId);
     } else{
       //If no groupId has been provided save the generated ID
@@ -137,15 +138,23 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
               ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(Duration.ofMillis(100));
               boolean brk = false;
               for (ConsumerRecord<String, byte[]> record : records) {
-                if (record.offset() >= endOffset-1) {
+                lastRecord = record;
+                if (record.offset() >= endOffset-0) {
                   brk = true;
                   break;
                 }
-                lastRecord = record;
                 byte[] rec = record.value();
+                System.out.println("Reprocessing at offset: " + record.offset());
                 eventProcessor.onEventReprocess(rec);
               }
               if (brk){
+                //Process intermediary events
+                for(ConsumerRecord<String, byte[]> record : records){
+                  if(record.offset() < lastRecord.offset()) continue;
+                  System.out.println("Intermediate processing at offset: " + record.offset() + " | Partition: " + record.partition());
+                  eventProcessor.onEvent(record.value());
+                  this.offsets.put(record.partition(), record.offset() + 1);
+                }
                 kafkaConsumer.commitAsync(Collections.singletonMap(new TopicPartition(topic, lastRecord.partition()), new OffsetAndMetadata(lastRecord.offset() +1)), null);
                 break;
               }
@@ -153,7 +162,9 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
           }
         }
       }
+
       System.out.println("Reprocessing done");
+      this.offsets = new HashMap<>();
       while (isRunning) {
         ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(Duration.ofMillis(100));
         int i = 0;
@@ -161,12 +172,15 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
           byte[] rec = record.value();
           eventProcessor.onEvent(rec);
           lastRecord = record;
-          this.offsets.put(record.partition(), record.offset());
+          System.out.println("Processing at offset: " + record.offset() + " | Partition: " + record.partition());
+          this.offsets.put(record.partition(), record.offset() + 1);
+          /**
           if(++i%20==0){
             kafkaConsumer.commitAsync(Collections.singletonMap(new TopicPartition(topic, lastRecord.partition()), new OffsetAndMetadata(lastRecord.offset() +1)), null);
-          }
+          }*/
         }
-        kafkaConsumer.commitAsync();
+        if(!records.isEmpty() && lastRecord != null)
+          kafkaConsumer.commitAsync();
         //My code -- check if paused, just paused after all records of last poll have been committed
         synchronized (this) {
           while (threadSuspended) {

@@ -73,11 +73,11 @@ public class StateHandler {
     }
 
     public String getState()  {
-        EvaluationLogger.log("timingsCheckpointing", "beforeSerialization;" + System.currentTimeMillis());
+        EvaluationLogger.log("timingsCheckpointing", "beforeSerialization", System.currentTimeMillis());
         Map<String, ClassfulObject> list = new HashMap<>();
         for(Field f : this.fields){
             try {
-                if(f != null){
+                if(f.get(this.obj) != null){
                     ClassfulObject o = new ClassfulObject(f.get(this.obj), this.serializer);
                     list.put(f.getName(), o);
                 }
@@ -85,7 +85,7 @@ public class StateHandler {
                 e.printStackTrace();
             }
         }
-        EvaluationLogger.log("timingsCheckpointing", "afterSerialization;" + System.currentTimeMillis());
+        EvaluationLogger.log("timingsCheckpointing", "afterSerialization", System.currentTimeMillis());
         return serializer.serialize(list);
     }
 }

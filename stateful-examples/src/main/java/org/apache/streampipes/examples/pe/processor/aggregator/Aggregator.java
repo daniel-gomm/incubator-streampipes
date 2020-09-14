@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Stack;
 
 public class Aggregator extends
         StatefulEventProcessor<AggregatorParameters> {
@@ -50,7 +51,6 @@ public class Aggregator extends
     this.stateHandler = new StateHandler(this);
     this.window_size = parameters.getWindow_size();
     this.state_size = parameters.getStateSize();
-    EvaluationLogger.addField("eventProcessed");
   }
 
   @Override
@@ -69,14 +69,12 @@ public class Aggregator extends
       System.out.println("Queue longer than " + this.window_size);
     }
     event.addField("aggregation", value);
-    System.out.println(value);
+    System.out.println("processing:" + currentValue + " | result: " + value);
     out.collect(event);
-    EvaluationLogger.log("eventProcessed", Long.valueOf(System.currentTimeMillis()).toString());
+    EvaluationLogger.log("eventProcessed", System.currentTimeMillis(), currentValue);
   }
 
   @Override
   public void onDetach() {
-    EvaluationLogger.close();
   }
-
 }

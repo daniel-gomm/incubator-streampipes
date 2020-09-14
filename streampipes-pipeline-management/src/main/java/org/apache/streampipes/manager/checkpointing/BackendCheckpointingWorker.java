@@ -36,11 +36,12 @@ public enum BackendCheckpointingWorker implements Runnable {
     private static volatile boolean isRunning = false;
 
     public void registerPipelineElement(InvocableStreamPipesEntity invoc){
-        registerPipelineElement(invoc, DatabasesSingleton.INSTANCE.getDatabase(invoc.getElementId()), 30000L);
+        registerPipelineElement(invoc, DatabasesSingleton.INSTANCE.getDatabase(invoc.getElementId()), 5000L);
     }
 
     public void registerPipelineElement(InvocableStreamPipesEntity invoc, PipelineElementDatabase db, Long interval){
         invocations.put(System.currentTimeMillis() + interval, new TrackedBackendDatabase(invoc, db, interval));
+        System.out.println("Registered " + invoc.getElementId());
         if(!isRunning){
             this.startWorker();
         }
@@ -55,6 +56,9 @@ public enum BackendCheckpointingWorker implements Runnable {
 
         if(invocations.isEmpty())
             INSTANCE.stopWorker();
+
+        System.out.println("Unregistered " + elementId);
+
     }
 
 
@@ -93,10 +97,13 @@ public enum BackendCheckpointingWorker implements Runnable {
                         PipelineElementStatus resp = new HttpRequestBuilder(entry.getValue().invocableStreamPipesEntity, entry.getValue().invocableStreamPipesEntity.getElementId() + "/checkpoint").getState();
                         if(resp.isSuccess()){
                             entry.getValue().db.add(resp.getOptionalMessage());
+                            System.out.println("Got state: " + resp.getOptionalMessage());
                         }else if(resp.getOptionalMessage() != null && resp.getOptionalMessage().startsWith(entry.getValue().elementID)){
                             //TODO Handle the case that the latest state has already been fetched (if it is not present, get it from the latest checkpoint id)
+                            System.out.println("Latest state already fetched.");
                         }else{
                             //TODO Handle the case that the state was unavailable (retry or what?)
+                            System.out.println("State unavailable");
                         }
                         //Update the key of the entry
                         invocations.remove(entry.getKey(), entry.getValue());
