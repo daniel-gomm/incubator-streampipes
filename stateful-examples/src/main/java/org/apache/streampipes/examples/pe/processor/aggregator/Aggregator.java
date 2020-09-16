@@ -29,9 +29,10 @@ import org.apache.streampipes.wrapper.routing.SpOutputCollector;
 
 import org.slf4j.Logger;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.Stack;
+import java.util.TreeSet;
 
 public class Aggregator extends
         StatefulEventProcessor<AggregatorParameters> {
@@ -76,5 +77,16 @@ public class Aggregator extends
 
   @Override
   public void onDetach() {
+  }
+
+  @Override
+  public void setState(String state) {
+    super.setState(state);
+    TreeSet<Double> treeSet = new TreeSet<>(this.pastEvents);
+    Iterator<Double> it = treeSet.iterator();
+    this.pastEvents = new LinkedList<>();
+    for(Double val = it.next(); it.hasNext();){
+      this.pastEvents.offer(val);
+    }
   }
 }
