@@ -56,7 +56,7 @@ public class Aggregator extends
   @Override
   public void onEvent(Event event, SpOutputCollector out) {
     if(blowUpDinero == null){
-      blowUpDinero = StringUtils.repeat("DDDDDDDD", state_size*1024/16);
+      blowUpDinero = "" + StringUtils.repeat("DDDDDDDD", state_size*1024/16);
     }
     double currentValue = event.getFieldByRuntimeName("value").getAsPrimitive().getAsDouble();
     if(pastEvents.size() < this.window_size){

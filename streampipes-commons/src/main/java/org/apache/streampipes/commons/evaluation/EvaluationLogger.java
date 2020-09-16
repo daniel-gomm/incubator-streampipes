@@ -86,7 +86,7 @@ public class EvaluationLogger {
             }
         }
         for (Map.Entry<String, List<String[]>> entry : tempLog.entrySet()) {
-            File f = new File("/home/daniel/evaluation/results/" + folder +"/" + entry.getKey() + ".csv");
+            File f = new File(System.getProperty("user.home") + "/evaluation/results/" + folder +"/" + entry.getKey() + ".csv");
             if (!f.exists()) {
                 try {
                     Files.createDirectories(f.getParentFile().toPath());

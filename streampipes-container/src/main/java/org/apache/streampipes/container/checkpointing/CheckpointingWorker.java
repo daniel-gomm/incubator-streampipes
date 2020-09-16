@@ -19,9 +19,13 @@
 package org.apache.streampipes.container.checkpointing;
 
 import org.apache.streampipes.container.declarer.InvocableDeclarer;
+import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
+import org.apache.streampipes.model.base.NamedStreamPipesEntity;
 import org.apache.streampipes.state.database.DatabasesSingleton;
-import org.apache.streampipes.state.rocksdb.StateDatabase;
 
+
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -29,50 +33,58 @@ public enum CheckpointingWorker implements Runnable{
     INSTANCE;
 
 
-    private static volatile TreeMap<Long, TrackedDatabase> invocations= new TreeMap();
+    private static TreeMap<Long, TrackedDatabase> invocations= new TreeMap<>();
     private static volatile boolean isRunning = false;
+    private static final List<String> trackedElements = new LinkedList<>();
+    private Thread thread;
 
-    public static void registerPipelineElement(InvocableDeclarer invocation, String elementId){
+    public static void registerPipelineElement(InvocableDeclarer<NamedStreamPipesEntity, InvocableStreamPipesEntity> invocation, String elementId){
         registerPipelineElement(invocation, 3000L, elementId);
     }
 
-    public static void registerPipelineElement(InvocableDeclarer invocation, Long interval, String elementId){
-        invocations.put(System.currentTimeMillis() + interval,
-                new TrackedDatabase(DatabasesSingleton.INSTANCE.getDatabase(elementId),
-                        interval, invocation,
-                        elementId.split("/")[elementId.split("/").length - 1]));
-        if(!isRunning()){
-            INSTANCE.startWorker();
+    public static void registerPipelineElement(InvocableDeclarer<NamedStreamPipesEntity, InvocableStreamPipesEntity> invocation, Long interval, String elementId){
+        synchronized (invocations){
+            System.out.println("Registered: " + elementId);
+            trackedElements.add(elementId);
+
+            boolean inserted = false;
+            long key = System.currentTimeMillis() + interval;
+            while (!inserted){
+                if(invocations.containsKey(key)){
+                    key++;
+                } else{
+                    invocations.put(key, new
+                            TrackedDatabase(DatabasesSingleton.INSTANCE.getDatabase(elementId),
+                            interval, invocation, elementId));
+                    inserted = true;
+                }
+            }
+            if(!isRunning){
+                INSTANCE.startWorker();
+            }
         }
     }
 
     public static void unregisterPipelineElement(String runningInstanceId){
-        Map.Entry e = null;
-        for(Map.Entry<Long, TrackedDatabase> entry : invocations.entrySet()){
-            if(runningInstanceId.equals(entry.getValue().elementId))
-                e = entry;
+        synchronized (invocations){
+            System.out.println("Unregistered: " + runningInstanceId);
+            trackedElements.remove(runningInstanceId);
+            invocations.entrySet().removeIf(entry -> runningInstanceId.equals(entry.getValue().elementId));
+            if(invocations.isEmpty())
+                INSTANCE.stopWorker();
         }
-        if(e != null)
-            invocations.remove(e.getKey(), e.getValue());
-
-        if(invocations.isEmpty())
-            INSTANCE.stopWorker();
     }
 
     public void startWorker(){
-        if(!isRunning){
-            Thread t = new Thread(this);
-            t.start();
-            isRunning = true;
+        isRunning = true;
+        if(this.thread == null || !this.thread.isAlive()){
+            this.thread = new Thread(this);
+            this.thread.start();
         }
     }
 
     public void stopWorker(){
-        this.isRunning = false;
-    }
-
-    public static boolean isRunning(){
-        return isRunning;
+        isRunning = false;
     }
 
 
@@ -80,17 +92,24 @@ public enum CheckpointingWorker implements Runnable{
     public void run() {
         try{
             while(isRunning){
+                System.out.println("BF:" + invocations.toString() + "Thread:" + Thread.currentThread().getName());
                 Map.Entry<Long, TrackedDatabase> entry = invocations.firstEntry();
-                Long wait = Math.max(entry.getKey() - System.currentTimeMillis(), 0);
+                System.out.println(invocations.toString() + entry.toString());
+                long wait = Math.max(entry.getKey() - System.currentTimeMillis(), 0);
                 try{
                     Thread.sleep(wait);
                 }catch (InterruptedException e){
                     e.printStackTrace();
                 }
+                if(!trackedElements.contains(entry.getValue().elementId)){
+                    unregisterPipelineElement(entry.getValue().elementId);
+                    continue;
+                }
                 //Exception handling in case that the PE is discarded while the checkpointing process is still ongoing
                 try {
                     //Only start checkpointing if the PE is not unregistered yet
-                    if (invocations.containsValue(entry.getValue())) {
+                    //if (invocations.containsValue(entry.getValue())) {
+                    synchronized (invocations){
                         String state = entry.getValue().invocableDeclarer.getState();
                         System.out.println(state);
                         entry.getValue().db.add(state);
@@ -99,8 +118,21 @@ public enum CheckpointingWorker implements Runnable{
                     e.printStackTrace();
                 }
                 //Update the key of the entry
-                invocations.remove(entry.getKey(), entry.getValue());
-                invocations.put(System.currentTimeMillis() + entry.getValue().waitInterval, entry.getValue());
+                if(invocations.containsKey(entry.getKey())){
+                    invocations.entrySet().removeIf(e -> e.getValue() == entry.getValue());
+                    invocations.remove(entry.getKey());
+                    boolean inserted = false;
+                    long key = (System.currentTimeMillis() + entry.getValue().waitInterval);
+                    while (!inserted){
+                        if(invocations.containsKey(key) && !invocations.containsValue(entry.getValue())){
+                            key++;
+                        } if(invocations.containsValue(entry.getValue())) break;
+                        else{
+                            invocations.put(key, entry.getValue());
+                            inserted = true;
+                        }
+                    }
+                }
             }
         }catch(Exception e){
             e.printStackTrace();

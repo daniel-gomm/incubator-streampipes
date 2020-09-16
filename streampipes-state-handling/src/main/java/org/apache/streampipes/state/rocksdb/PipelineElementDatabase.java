@@ -26,7 +26,7 @@ public class PipelineElementDatabase {
     private final String columnFamily;
     private ColumnFamilyHandle columnFamilyHandle = null;
     private byte[] lastAdded;
-    private Long retainedCheckpoints;
+    private final long retainedCheckpoints;
     private boolean returnedLatest = false;
 
     public PipelineElementDatabase(String elementId) {
@@ -50,7 +50,7 @@ public class PipelineElementDatabase {
     }
 
     public void add(String value){
-        returnedLatest = false;
+        this.returnedLatest = false;
         this.lastAdded = (this.columnFamily + "--" + System.currentTimeMillis()).getBytes();
         StateDatabase.DATABASE.save(this.lastAdded, value.getBytes(), this.columnFamilyHandle);
         StateDatabase.DATABASE.trim(this.columnFamilyHandle, this.retainedCheckpoints);
@@ -61,12 +61,14 @@ public class PipelineElementDatabase {
     }
 
     public String getLast(){
+        return new String(StateDatabase.DATABASE.find(this.lastAdded, this.columnFamilyHandle));
+        /**
         if(this.returnedLatest){
             return null;
         }else{
             this.returnedLatest = true;
             return new String(StateDatabase.DATABASE.find(this.lastAdded, this.columnFamilyHandle));
-        }
+        }*/
     }
 
     public String getLastKey(){

@@ -27,11 +27,15 @@ public class TrackedBackendDatabase {
     InvocableStreamPipesEntity invocableStreamPipesEntity;
     Long interval;
     PipelineElementDatabase db;
-    public TrackedBackendDatabase(InvocableStreamPipesEntity invoc, PipelineElementDatabase db, Long interval){
+    public TrackedBackendDatabase(InvocableStreamPipesEntity invoc, Long interval){
         this.elementID = invoc.getElementId();
         this.invocableStreamPipesEntity = invoc;
         this.interval = interval;
-        this.db = db;
         this.db = DatabasesSingleton.INSTANCE.getDatabase(invoc.getElementId());
+    }
+
+    @Override
+    public String toString() {
+        return "trackedDatabase for " + this.elementID +", db: " + db.toString();
     }
 }

@@ -245,7 +245,6 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     public String getCheckpoint(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId){
         try {
             String checkpoint = DatabasesSingleton.INSTANCE.getDatabase(runningInstanceId).getLast();
-
             if (checkpoint != null) {
                 Response resp = new Response(elementId, true, checkpoint);
                 return Util.toResponseString(resp);

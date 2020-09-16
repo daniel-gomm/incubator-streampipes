@@ -34,10 +34,7 @@ import org.apache.streampipes.messaging.kafka.config.ProducerConfigFactory;
 import org.apache.streampipes.model.grounding.KafkaTransportProtocol;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 public class SpKafkaProducer implements EventProducer<KafkaTransportProtocol>, Serializable {
@@ -47,6 +44,7 @@ public class SpKafkaProducer implements EventProducer<KafkaTransportProtocol>, S
   private String brokerUrl;
   private String topic;
   private Producer<String, byte[]> producer;
+  private Queue<byte[]> bufferQueue = new LinkedList<>();
 
   private Boolean connected;
 
@@ -71,7 +69,18 @@ public class SpKafkaProducer implements EventProducer<KafkaTransportProtocol>, S
   }
 
   public void publish(byte[] message) {
-    producer.send(new ProducerRecord<>(topic, message));
+    //TODO remove this hotfix
+    if(this.producer == null){
+      System.out.println("Producer not ready yet, writing in queue..");
+      this.bufferQueue.offer(message);
+    } else if(!bufferQueue.isEmpty()){
+      while (!bufferQueue.isEmpty()){
+        producer.send(new ProducerRecord<>(topic, bufferQueue.poll()));
+      }
+      producer.send(new ProducerRecord<>(topic, message));
+    }else{
+      producer.send(new ProducerRecord<>(topic, message));
+    }
   }
 
   private Properties makeProperties(KafkaTransportProtocol protocol) {

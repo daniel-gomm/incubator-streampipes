@@ -25,48 +25,56 @@ import org.apache.streampipes.state.database.DatabasesSingleton;
 import org.apache.streampipes.state.rocksdb.PipelineElementDatabase;
 import org.apache.streampipes.state.rocksdb.StateDatabase;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 public enum BackendCheckpointingWorker implements Runnable {
     INSTANCE;
 
-    private static volatile TreeMap<Long, TrackedBackendDatabase> invocations= new TreeMap();
+    private static final TreeMap<Long, TrackedBackendDatabase> invocations= new TreeMap<>();
     private static volatile boolean isRunning = false;
+    private static final List<String> trackedElements = new LinkedList<>();
+    private Thread thread;
+
 
     public void registerPipelineElement(InvocableStreamPipesEntity invoc){
-        registerPipelineElement(invoc, DatabasesSingleton.INSTANCE.getDatabase(invoc.getElementId()), 5000L);
+        registerPipelineElement(invoc, 5000L);
     }
 
-    public void registerPipelineElement(InvocableStreamPipesEntity invoc, PipelineElementDatabase db, Long interval){
-        invocations.put(System.currentTimeMillis() + interval, new TrackedBackendDatabase(invoc, db, interval));
-        System.out.println("Registered " + invoc.getElementId());
-        if(!isRunning){
-            this.startWorker();
+    public void registerPipelineElement(InvocableStreamPipesEntity invoc, Long interval){
+        synchronized (invocations){
+            trackedElements.add(invoc.getElementId());
+            boolean inserted = false;
+            long key = System.currentTimeMillis() + interval;
+            while (!inserted){
+                if(invocations.containsKey(key)){
+                    key++;
+                } else{
+                    invocations.put(key, new TrackedBackendDatabase(invoc, interval));
+                    inserted = true;
+                }
+            }
+            System.out.println("Registered " + invoc.getElementId());
+            if(!isRunning) this.startWorker();
         }
     }
 
     public void unregisterPipelineElement(String elementId){
-        for(Iterator<Map.Entry<Long, TrackedBackendDatabase>> iter = invocations.entrySet().iterator(); iter.hasNext();){
-            Map.Entry<Long, TrackedBackendDatabase> entry = iter.next();
-            if(elementId.equals(entry.getValue().elementID))
-                iter.remove();
+        synchronized (invocations){
+            trackedElements.remove(elementId);
+            invocations.entrySet().removeIf(entry -> elementId.equals(entry.getValue().elementID));
+            if(invocations.isEmpty())
+                INSTANCE.stopWorker();
+            System.out.println("Unregistered " + elementId);
         }
-
-        if(invocations.isEmpty())
-            INSTANCE.stopWorker();
-
-        System.out.println("Unregistered " + elementId);
 
     }
 
 
     public void startWorker(){
-        if(!isRunning){
-            Thread t = new Thread(this);
-            t.start();
-            isRunning = true;
+        isRunning = true;
+        if(this.thread == null || !this.thread.isAlive()){
+            this.thread = new Thread(this);
+            this.thread.start();
         }
     }
 
@@ -74,9 +82,6 @@ public enum BackendCheckpointingWorker implements Runnable {
         this.isRunning = false;
     }
 
-    public static boolean isRunning(){
-        return isRunning;
-    }
 
     @Override
     public void run() {
@@ -89,25 +94,41 @@ public enum BackendCheckpointingWorker implements Runnable {
                 }catch (InterruptedException e){
                     e.printStackTrace();
                 }
+                if(!trackedElements.contains(entry.getValue().elementID)){
+                    unregisterPipelineElement(entry.getValue().elementID);
+                    continue;
+                }
                 //Exception handling in case that the PE is discarded while the checkpointing process is still ongoing
                 try {
                     //Only start checkpointing if the PE is not unregistered yet
-                    if (invocations.containsValue(entry.getValue())) {
-
-                        PipelineElementStatus resp = new HttpRequestBuilder(entry.getValue().invocableStreamPipesEntity, entry.getValue().invocableStreamPipesEntity.getElementId() + "/checkpoint").getState();
-                        if(resp.isSuccess()){
-                            entry.getValue().db.add(resp.getOptionalMessage());
-                            System.out.println("Got state: " + resp.getOptionalMessage());
-                        }else if(resp.getOptionalMessage() != null && resp.getOptionalMessage().startsWith(entry.getValue().elementID)){
-                            //TODO Handle the case that the latest state has already been fetched (if it is not present, get it from the latest checkpoint id)
-                            System.out.println("Latest state already fetched.");
-                        }else{
-                            //TODO Handle the case that the state was unavailable (retry or what?)
-                            System.out.println("State unavailable");
+                    //if (invocations.containsValue(entry.getValue())) {
+                    synchronized (invocations){
+                        if (trackedElements.contains(entry.getValue().elementID)) {
+                            PipelineElementStatus resp = new HttpRequestBuilder(entry.getValue().invocableStreamPipesEntity, entry.getValue().invocableStreamPipesEntity.getElementId() + "/checkpoint").getState();
+                            if(resp.isSuccess()){
+                                entry.getValue().db.add(resp.getOptionalMessage());
+                                System.out.println("Got state: " + entry.getValue().elementID);
+                            }else if(resp.getOptionalMessage() != null && resp.getOptionalMessage().startsWith(entry.getValue().elementID)){
+                                //The latest state has already been fetched (if it is not present, get it from the latest checkpoint id)
+                                System.out.println("Latest state already fetched.");
+                            }else{
+                                //The state was unavailable
+                                System.out.println("State unavailable\n" + resp.getOptionalMessage());
+                            }
+                            //Update the key of the entry
+                            invocations.entrySet().removeIf(e -> e.getValue() == entry.getValue());
+                            invocations.remove(entry.getKey());
+                            boolean inserted = false;
+                            long key = System.currentTimeMillis() + entry.getValue().interval;
+                            while (!inserted){
+                                if(invocations.containsKey(key)){
+                                    key++;
+                                } else{
+                                    invocations.put(key, entry.getValue());
+                                    inserted = true;
+                                }
+                            }
                         }
-                        //Update the key of the entry
-                        invocations.remove(entry.getKey(), entry.getValue());
-                        invocations.put(System.currentTimeMillis() + entry.getValue().interval, entry.getValue());
                     }
                 }catch(Exception e){
                     e.printStackTrace();

@@ -22,6 +22,7 @@ import com.google.gson.Gson;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.streampipes.commons.evaluation.EvaluationLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
@@ -130,6 +131,7 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
         }
         //If an offset has been provided seek the offset to pick up processing from there
         for (Map.Entry<TopicPartition, Long> tp : endOffsets.entrySet()) {
+          EvaluationLogger.log("timingsPE", "beforeReprocessing", System.currentTimeMillis());
           if (tp.getValue() != startOffsets.get(tp.getKey().partition()) + 1) {
             //Need to reprocess events
             long endOffset = tp.getValue();
@@ -144,26 +146,30 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
                   break;
                 }
                 byte[] rec = record.value();
-                System.out.println("Reprocessing at offset: " + record.offset());
+                System.out.println("RP offset: " + record.offset());
                 eventProcessor.onEventReprocess(rec);
               }
               if (brk){
+                EvaluationLogger.log("timingsPE", "afterReprocessing", System.currentTimeMillis());
                 //Process intermediary events
                 for(ConsumerRecord<String, byte[]> record : records){
                   if(record.offset() < lastRecord.offset()) continue;
-                  System.out.println("Intermediate processing at offset: " + record.offset() + " | Partition: " + record.partition());
-                  eventProcessor.onEvent(record.value());
+                  System.out.println("IP offset: " + record.offset());
+                  byte[] rec = record.value();
+                  eventProcessor.onEvent(rec);
                   this.offsets.put(record.partition(), record.offset() + 1);
                 }
-                kafkaConsumer.commitAsync(Collections.singletonMap(new TopicPartition(topic, lastRecord.partition()), new OffsetAndMetadata(lastRecord.offset() +1)), null);
+                kafkaConsumer.commitAsync(Collections.singletonMap(
+                        new TopicPartition(topic, lastRecord.partition()),
+                        new OffsetAndMetadata(lastRecord.offset() +1)), null);
+                EvaluationLogger.log("timingsPE", "afterIntermediateProcessing", System.currentTimeMillis());
                 break;
               }
             }
           }
         }
+        System.out.println("Reprocessing done");
       }
-
-      System.out.println("Reprocessing done");
       this.offsets = new HashMap<>();
       while (isRunning) {
         ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(Duration.ofMillis(100));
@@ -172,12 +178,12 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
           byte[] rec = record.value();
           eventProcessor.onEvent(rec);
           lastRecord = record;
-          System.out.println("Processing at offset: " + record.offset() + " | Partition: " + record.partition());
+          System.out.println("P offset: " + record.offset());
           this.offsets.put(record.partition(), record.offset() + 1);
-          /**
-          if(++i%20==0){
-            kafkaConsumer.commitAsync(Collections.singletonMap(new TopicPartition(topic, lastRecord.partition()), new OffsetAndMetadata(lastRecord.offset() +1)), null);
-          }*/
+          if(++i%20==0)
+            kafkaConsumer.commitAsync(Collections.singletonMap(
+                    new TopicPartition(topic, lastRecord.partition()),
+                    new OffsetAndMetadata(lastRecord.offset() +1)), null);
         }
         if(!records.isEmpty() && lastRecord != null)
           kafkaConsumer.commitAsync();
@@ -271,7 +277,8 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
     KafkaState ks = new KafkaState();
     ks.groupId = this.groupId;
     ks.offsets = this.offsets;
-    return new Gson().toJson(ks);
+    String ret = new Gson().toJson(ks);
+    return ret;
   }
 
   @Override
