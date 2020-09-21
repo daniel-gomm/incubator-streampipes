@@ -43,7 +43,7 @@ public class AggregatorController extends StandaloneEventProcessingDeclarer<Aggr
 	@Override
 	public DataProcessorDescription declareModel() {
 		return ProcessingElementBuilder.create("org.apache.streampipes.examples.pe.processor.aggregator")
-				.withAssets(Assets.DOCUMENTATION, Assets.ICON)
+				.withAssets(Assets.DOCUMENTATION)
 				.withLocales(Locales.EN)
 				.category(DataProcessorType.AGGREGATE)
 				.requiredStream(StreamRequirementsBuilder

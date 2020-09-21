@@ -85,8 +85,6 @@ public class Aggregator extends
     TreeSet<Double> treeSet = new TreeSet<>(this.pastEvents);
     Iterator<Double> it = treeSet.iterator();
     this.pastEvents = new LinkedList<>();
-    for(Double val = it.next(); it.hasNext();){
-      this.pastEvents.offer(val);
-    }
+    while(it.hasNext()) this.pastEvents.offer(it.next());
   }
 }

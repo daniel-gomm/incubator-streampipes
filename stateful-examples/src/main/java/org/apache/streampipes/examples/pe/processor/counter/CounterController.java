@@ -35,7 +35,7 @@ public class CounterController extends StandaloneEventProcessingDeclarer<Counter
     @Override
     public DataProcessorDescription declareModel() {
         return ProcessingElementBuilder.create("org.apache.streampipes.examples.pe.processor.counter")
-                .withAssets(Assets.DOCUMENTATION, Assets.ICON)
+                .withAssets(Assets.DOCUMENTATION)
                 .withLocales(Locales.EN)
                 .category(DataProcessorType.AGGREGATE)
                 .requiredStream(StreamRequirementsBuilder

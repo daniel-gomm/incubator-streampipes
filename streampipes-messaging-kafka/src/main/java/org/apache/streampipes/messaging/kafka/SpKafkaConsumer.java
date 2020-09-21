@@ -191,12 +191,31 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
         synchronized (this) {
           while (threadSuspended) {
             try {
+              kafkaConsumer.unsubscribe();
               wait();
             } catch (InterruptedException e) {
               e.printStackTrace();
             }
             if (!isRunning) {
               break;
+            }
+            if(!threadSuspended){
+              if (!patternTopic) {
+                kafkaConsumer.subscribe(Collections.singletonList(topic));
+              } else {
+                topic = replaceWildcardWithPatternFormat(topic);
+                kafkaConsumer.subscribe(Pattern.compile(topic), new ConsumerRebalanceListener() {
+                  @Override
+                  public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+                    // TODO
+                  }
+
+                  @Override
+                  public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+                    // TODO
+                  }
+                });
+              }
             }
           }
         }

@@ -92,9 +92,9 @@ public enum CheckpointingWorker implements Runnable{
     public void run() {
         try{
             while(isRunning){
-                System.out.println("BF:" + invocations.toString() + "Thread:" + Thread.currentThread().getName());
+                //System.out.println("BF:" + invocations.toString() + "Thread:" + Thread.currentThread().getName());
                 Map.Entry<Long, TrackedDatabase> entry = invocations.firstEntry();
-                System.out.println(invocations.toString() + entry.toString());
+                //System.out.println(invocations.toString() + entry.toString());
                 long wait = Math.max(entry.getKey() - System.currentTimeMillis(), 0);
                 try{
                     Thread.sleep(wait);
@@ -110,9 +110,8 @@ public enum CheckpointingWorker implements Runnable{
                     //Only start checkpointing if the PE is not unregistered yet
                     //if (invocations.containsValue(entry.getValue())) {
                     synchronized (invocations){
-                        String state = entry.getValue().invocableDeclarer.getState();
-                        System.out.println(state);
-                        entry.getValue().db.add(state);
+                        //System.out.println(state);
+                        entry.getValue().db.add(entry.getValue().invocableDeclarer.getState());
                     }
                 }catch(Exception e){
                     e.printStackTrace();

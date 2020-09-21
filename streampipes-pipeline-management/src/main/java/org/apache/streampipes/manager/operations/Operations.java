@@ -21,6 +21,7 @@ package org.apache.streampipes.manager.operations;
 import org.apache.streampipes.commons.exceptions.NoSuitableSepasAvailableException;
 import org.apache.streampipes.commons.exceptions.SepaParseException;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
+import org.apache.streampipes.manager.checkpointing.BackendCheckpointingWorker;
 import org.apache.streampipes.manager.endpoint.EndpointItemFetcher;
 import org.apache.streampipes.manager.execution.http.PipelineExecutor;
 import org.apache.streampipes.manager.execution.http.PipelineStorageService;
@@ -45,11 +46,14 @@ import org.apache.streampipes.model.client.pipeline.PipelineElementRecommendatio
 import org.apache.streampipes.model.client.pipeline.PipelineModificationMessage;
 import org.apache.streampipes.model.client.pipeline.PipelineOperationStatus;
 import org.apache.streampipes.model.client.runtime.ContainerProvidedOptionsParameterRequest;
+import org.apache.streampipes.model.graph.DataProcessorInvocation;
+import org.apache.streampipes.model.graph.DataSinkInvocation;
 import org.apache.streampipes.model.staticproperty.Option;
 import org.apache.streampipes.model.template.PipelineTemplateDescription;
 import org.apache.streampipes.model.template.PipelineTemplateInvocation;
 import org.apache.streampipes.storage.management.StorageDispatcher;
 
+import java.nio.channels.Pipe;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -196,6 +200,11 @@ public class Operations {
     PipelineOperationStatus status = pe.migrateFailed(nodes);
     new PipelineStorageService(pipeline).updatePipeline();
     return status;
+  }
+
+  public static void removeFromCheckpointing(Pipeline pipeline){
+    pipeline.getActions().forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getElementId()));
+    pipeline.getSepas().forEach(g -> BackendCheckpointingWorker.INSTANCE.unregisterPipelineElement(g.getElementId()));
   }
 
 }

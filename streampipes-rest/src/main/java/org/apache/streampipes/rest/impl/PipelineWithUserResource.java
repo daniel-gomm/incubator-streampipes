@@ -117,6 +117,7 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
     @Produces(MediaType.APPLICATION_JSON)
     @GsonWithIds
     public Response removeOwn(@PathParam("username") String username, @PathParam("pipelineId") String elementUri) {
+        Operations.removeFromCheckpointing(getPipelineStorage().getPipeline(elementUri));
         getPipelineStorage().deletePipeline(elementUri);
         return statusMessage(Notifications.success("Pipeline deleted"));
     }

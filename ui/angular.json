@@ -26,7 +26,7 @@
               }
             ],
             "styles": [
-              "src/scss/main.scss",
+              "src/scss/main.scss"
             ],
             "scripts": [
               "node_modules/systemjs/dist/system.js",
@@ -72,8 +72,7 @@
           "options": {
             "browserTarget": "app:build:development"
           },
-          "configurations": {
-          }
+          "configurations": {}
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
@@ -97,7 +96,7 @@
               "src/assets/OrbitControls.js",
               "src/assets/PackWidget.js",
               "src/assets/render.js"
-              ]
+            ]
           }
         },
         "lint": {
@@ -115,5 +114,8 @@
       "projectType": "application"
     }
   },
-  "defaultProject": "app"
+  "defaultProject": "app",
+  "cli": {
+    "analytics": false
+  }
 }
