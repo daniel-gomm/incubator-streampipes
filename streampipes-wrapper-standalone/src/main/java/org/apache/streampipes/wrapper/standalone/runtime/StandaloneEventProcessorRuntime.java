@@ -101,7 +101,6 @@ public class StandaloneEventProcessorRuntime<B extends EventProcessorBindingPara
   public void bindRuntime(PipelineElementState state) throws SpRuntimeException {
     bindEngine();
     if(engine instanceof StatefulEventProcessor){
-      ((StatefulEventProcessor)engine).setElementId(this.params.getBindingParams().getGraph().getElementId());
       engine.onInvocation(params.getBindingParams(), getOutputCollector() , params.getRuntimeContext());
       ((StatefulEventProcessor)engine).setState(state.state);
     }else{

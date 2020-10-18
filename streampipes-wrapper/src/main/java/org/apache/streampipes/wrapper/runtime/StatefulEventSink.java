@@ -33,9 +33,5 @@ public abstract class StatefulEventSink<B extends EventSinkBindingParams> implem
     public void setState(String state){
         this.stateHandler.setState(state);
     }
-    //TODO assess usefulness and necessity
-    public void setElementId(String elementId){
-        this.elementId = elementId;
-    }
 
 }

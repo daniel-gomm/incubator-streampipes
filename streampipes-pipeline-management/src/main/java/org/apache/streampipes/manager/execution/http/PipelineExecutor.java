@@ -52,8 +52,6 @@ public class PipelineExecutor {
   private boolean storeStatus;
   private boolean monitor;
 
-  private static int evaluationRuns = 0;
-
   public PipelineExecutor(Pipeline pipeline, boolean visualize, boolean storeStatus,
                           boolean monitor) {
     this.pipeline = pipeline;

@@ -35,7 +35,4 @@ public abstract class StatefulEventProcessor <B extends EventProcessorBindingPar
         this.stateHandler.setState(state);
     }
     //TODO assess usefulness and necessity
-    public void setElementId(String elementId){
-        this.elementId = elementId;
-    }
 }

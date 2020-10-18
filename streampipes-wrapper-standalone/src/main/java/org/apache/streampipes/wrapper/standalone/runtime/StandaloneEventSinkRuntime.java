@@ -86,7 +86,6 @@ public class StandaloneEventSinkRuntime<B extends EventSinkBindingParams> extend
   public void bindRuntime(PipelineElementState state) throws SpRuntimeException {
     bindEngine();
     if(engine instanceof StatefulEventSink){
-      ((StatefulEventSink)engine).setElementId(this.params.getBindingParams().getGraph().getElementId());
       engine.onInvocation(params.getBindingParams(), params.getRuntimeContext());
       ((StatefulEventSink)engine).setState(state.state);
     }else{
