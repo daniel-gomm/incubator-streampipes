@@ -21,6 +21,7 @@ package org.apache.streampipes.container.checkpointing;
 import org.apache.streampipes.container.declarer.InvocableDeclarer;
 import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
 import org.apache.streampipes.model.base.NamedStreamPipesEntity;
+import org.apache.streampipes.state.checkpointing.CheckpointingWorker;
 import org.apache.streampipes.state.database.DatabasesSingleton;
 
 
@@ -29,11 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-public enum CheckpointingWorker implements Runnable{
+public enum ContainerCheckpointingWorker implements CheckpointingWorker {
     INSTANCE;
 
 
-    private static TreeMap<Long, TrackedDatabase> invocations= new TreeMap<>();
+    private static TreeMap<Long, ContainerTrackedDatabase> invocations= new TreeMap<>();
     private static volatile boolean isRunning = false;
     private static final List<String> trackedElements = new LinkedList<>();
     private Thread thread;
@@ -54,7 +55,7 @@ public enum CheckpointingWorker implements Runnable{
                     key++;
                 } else{
                     invocations.put(key, new
-                            TrackedDatabase(DatabasesSingleton.INSTANCE.getDatabase(elementId),
+                            ContainerTrackedDatabase(DatabasesSingleton.INSTANCE.getDatabase(elementId),
                             interval, invocation, elementId));
                     inserted = true;
                 }
@@ -93,7 +94,7 @@ public enum CheckpointingWorker implements Runnable{
         try{
             while(isRunning){
                 //System.out.println("BF:" + invocations.toString() + "Thread:" + Thread.currentThread().getName());
-                Map.Entry<Long, TrackedDatabase> entry = invocations.firstEntry();
+                Map.Entry<Long, ContainerTrackedDatabase> entry = invocations.firstEntry();
                 //System.out.println(invocations.toString() + entry.toString());
                 long wait = Math.max(entry.getKey() - System.currentTimeMillis(), 0);
                 try{

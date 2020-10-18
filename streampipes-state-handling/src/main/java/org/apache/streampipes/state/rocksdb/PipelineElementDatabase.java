@@ -30,7 +30,7 @@ public class PipelineElementDatabase {
     private boolean returnedLatest = false;
 
     public PipelineElementDatabase(String elementId) {
-        this(elementId, 15L);
+        this(elementId, 2L);
     }
 
     public PipelineElementDatabase(String elementId, Long retainedCheckpoints) {

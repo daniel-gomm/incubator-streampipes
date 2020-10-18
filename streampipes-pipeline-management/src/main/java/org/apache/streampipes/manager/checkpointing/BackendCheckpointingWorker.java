@@ -18,42 +18,42 @@
 
 package org.apache.streampipes.manager.checkpointing;
 
+import org.apache.streampipes.commons.evaluation.EvaluationLogger;
 import org.apache.streampipes.manager.execution.http.HttpRequestBuilder;
 import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
 import org.apache.streampipes.model.client.pipeline.PipelineElementStatus;
-import org.apache.streampipes.state.database.DatabasesSingleton;
-import org.apache.streampipes.state.rocksdb.PipelineElementDatabase;
-import org.apache.streampipes.state.rocksdb.StateDatabase;
+import org.apache.streampipes.state.checkpointing.CheckpointingWorker;
 
 import java.util.*;
 
-public enum BackendCheckpointingWorker implements Runnable {
+public enum BackendCheckpointingWorker implements CheckpointingWorker {
     INSTANCE;
 
-    private static final TreeMap<Long, TrackedBackendDatabase> invocations= new TreeMap<>();
+    private static final TreeMap<Long, BackendTrackedDatabase> invocations= new TreeMap<>();
     private static volatile boolean isRunning = false;
     private static final List<String> trackedElements = new LinkedList<>();
     private Thread thread;
 
 
     public void registerPipelineElement(InvocableStreamPipesEntity invoc){
-        registerPipelineElement(invoc, 5000L);
+        registerPipelineElement(invoc, 30000L);
     }
 
     public void registerPipelineElement(InvocableStreamPipesEntity invoc, Long interval){
         synchronized (invocations){
             trackedElements.add(invoc.getElementId());
             boolean inserted = false;
-            long key = System.currentTimeMillis() + interval;
+            long key = System.currentTimeMillis() + 5000; //Time added for evaluation ( + interval;)
             while (!inserted){
                 if(invocations.containsKey(key)){
                     key++;
                 } else{
-                    invocations.put(key, new TrackedBackendDatabase(invoc, interval));
+                    invocations.put(key, new BackendTrackedDatabase(invoc, interval));
                     inserted = true;
                 }
             }
             System.out.println("Registered " + invoc.getElementId());
+            EvaluationLogger.log("CheckpointingWorker", "Registered " + invoc.getElementId(), System.currentTimeMillis());
             if(!isRunning) this.startWorker();
         }
     }
@@ -65,6 +65,7 @@ public enum BackendCheckpointingWorker implements Runnable {
             if(invocations.isEmpty())
                 INSTANCE.stopWorker();
             System.out.println("Unregistered " + elementId);
+            EvaluationLogger.log("CheckpointingWorker", "Unregistered " + elementId, System.currentTimeMillis());
         }
 
     }
@@ -87,7 +88,7 @@ public enum BackendCheckpointingWorker implements Runnable {
     public void run() {
         try{
             while(isRunning){
-                Map.Entry<Long, TrackedBackendDatabase> entry = invocations.firstEntry();
+                Map.Entry<Long, BackendTrackedDatabase> entry = invocations.firstEntry();
                 Long wait = Math.max(entry.getKey() - System.currentTimeMillis(), 0);
                 try{
                     Thread.sleep(wait);
@@ -108,6 +109,7 @@ public enum BackendCheckpointingWorker implements Runnable {
                             if(resp.isSuccess()){
                                 entry.getValue().db.add(resp.getOptionalMessage());
                                 System.out.println("Got state: " + entry.getValue().elementID);
+                                EvaluationLogger.log("CheckpointingWorker", "Got state: " + entry.getValue().elementID, System.currentTimeMillis());
                             }else if(resp.getOptionalMessage() != null && resp.getOptionalMessage().startsWith(entry.getValue().elementID)){
                                 //The latest state has already been fetched (if it is not present, get it from the latest checkpoint id)
                                 System.out.println("Latest state already fetched.");

@@ -21,7 +21,6 @@ package org.apache.streampipes.container.api;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import org.apache.streampipes.commons.evaluation.EvaluationLogger;
-import org.apache.streampipes.container.checkpointing.CheckpointingWorker;
 import org.apache.streampipes.model.state.StatefulPayload;
 import org.apache.streampipes.state.database.DatabasesSingleton;
 import org.eclipse.rdf4j.repository.RepositoryException;
@@ -95,6 +94,7 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
 
             if (declarer != null) {
                 String runningInstanceId = getInstanceId(graph.getElementId(), elementId);
+                System.out.println("Invoked with Instance Id " + runningInstanceId);
                 RunningInstances.INSTANCE.add(runningInstanceId, graph, declarer.getClass().newInstance());
                 //My code
                 Response resp;
@@ -163,10 +163,11 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
     @Produces(MediaType.APPLICATION_JSON)
     public String detach(@PathParam("elementId") String elementId, @PathParam("runningInstanceId") String runningInstanceId) {
         EvaluationLogger.log("timingsPE", "detach" , System.currentTimeMillis());
+        System.out.println("Trying to detach " + runningInstanceId);
         InvocableDeclarer runningInstance = RunningInstances.INSTANCE.getInvocation(runningInstanceId);
         //Is this the right thing?
-        EvaluationLogger.writeToFiles(runningInstance.declareModel().getUri());
         if (runningInstance != null) {
+            EvaluationLogger.writeToFiles(runningInstance.declareModel().getUri());
             Response resp = runningInstance.detachRuntime(runningInstanceId);
 
             if (resp.isSuccess()) {
@@ -175,7 +176,6 @@ public abstract class InvocableElement<I extends InvocableStreamPipesEntity, D e
 
             return Util.toResponseString(resp);
         }
-
         return Util.toResponseString(elementId, false, "Could not find the running instance with id: " + runningInstanceId);
     }
 

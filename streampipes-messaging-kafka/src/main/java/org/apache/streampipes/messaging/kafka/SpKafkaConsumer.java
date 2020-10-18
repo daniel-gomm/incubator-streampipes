@@ -136,6 +136,7 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
             //Need to reprocess events
             long endOffset = tp.getValue();
             kafkaConsumer.seek(tp.getKey(), startOffsets.get(tp.getKey().partition()));
+            int reprocessedEvents = 0;
             while (true) {
               ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(Duration.ofMillis(100));
               boolean brk = false;
@@ -147,22 +148,27 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
                 }
                 byte[] rec = record.value();
                 System.out.println("RP offset: " + record.offset());
+                reprocessedEvents++;
                 eventProcessor.onEventReprocess(rec);
               }
               if (brk){
                 EvaluationLogger.log("timingsPE", "afterReprocessing", System.currentTimeMillis());
+                EvaluationLogger.log("timingsPE", "reprocessedEvents", reprocessedEvents);
                 //Process intermediary events
+                int intermediatelyProcessed = 0;
                 for(ConsumerRecord<String, byte[]> record : records){
                   if(record.offset() < lastRecord.offset()) continue;
                   System.out.println("IP offset: " + record.offset());
                   byte[] rec = record.value();
                   eventProcessor.onEvent(rec);
+                  intermediatelyProcessed++;
                   this.offsets.put(record.partition(), record.offset() + 1);
                 }
                 kafkaConsumer.commitAsync(Collections.singletonMap(
                         new TopicPartition(topic, lastRecord.partition()),
                         new OffsetAndMetadata(lastRecord.offset() +1)), null);
                 EvaluationLogger.log("timingsPE", "afterIntermediateProcessing", System.currentTimeMillis());
+                EvaluationLogger.log("timingsPE", "intermediatelyProcessed", intermediatelyProcessed);
                 break;
               }
             }
@@ -227,7 +233,8 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
     finally {
       this.isFinished = true;
       LOG.info("Closing Kafka Consumer.");
-      kafkaConsumer.commitSync(Collections.singletonMap(new TopicPartition(topic, lastRecord.partition()), new OffsetAndMetadata(lastRecord.offset() +1)), Duration.ofMillis(1000L));
+      if(lastRecord != null)
+        kafkaConsumer.commitSync(Collections.singletonMap(new TopicPartition(topic, lastRecord.partition()), new OffsetAndMetadata(lastRecord.offset() +1)), Duration.ofMillis(1000L));
       kafkaConsumer.close();
       synchronized (this) {
         notifyAll();

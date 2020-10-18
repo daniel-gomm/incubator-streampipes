@@ -16,21 +16,27 @@
  *
  */
 
-package org.apache.streampipes.container.checkpointing;
+package org.apache.streampipes.manager.checkpointing;
 
-import org.apache.streampipes.container.declarer.InvocableDeclarer;
+import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
+import org.apache.streampipes.state.checkpointing.TrackedDatabase;
+import org.apache.streampipes.state.database.DatabasesSingleton;
 import org.apache.streampipes.state.rocksdb.PipelineElementDatabase;
 
-public class TrackedDatabase {
+public class BackendTrackedDatabase implements TrackedDatabase {
+    String elementID;
+    InvocableStreamPipesEntity invocableStreamPipesEntity;
+    Long interval;
     PipelineElementDatabase db;
-    InvocableDeclarer invocableDeclarer;
-    Long waitInterval;
-    String elementId;
+    public BackendTrackedDatabase(InvocableStreamPipesEntity invoc, Long interval){
+        this.elementID = invoc.getElementId();
+        this.invocableStreamPipesEntity = invoc;
+        this.interval = interval;
+        this.db = DatabasesSingleton.INSTANCE.getDatabase(invoc.getElementId());
+    }
 
-    public TrackedDatabase(PipelineElementDatabase db, Long waitInterval, InvocableDeclarer invocableDeclarer, String elementId){
-        this.db = db;
-        this.waitInterval = waitInterval;
-        this.invocableDeclarer = invocableDeclarer;
-        this.elementId = elementId;
+    @Override
+    public String toString() {
+        return "trackedDatabase for " + this.elementID +", db: " + db.toString();
     }
 }
