@@ -22,7 +22,6 @@ import com.google.gson.Gson;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.streampipes.commons.evaluation.EvaluationLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
@@ -48,13 +47,11 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
   private volatile boolean isFinished = false;
   private Boolean patternTopic = false;
 
-  //My code
   private HashMap<Integer, Long> offsets = new HashMap<Integer, Long>();
   private HashMap<Integer, Long> startOffsets = new HashMap<>();
   private String groupId = null;
   private volatile boolean threadSuspended = false;
 
-  //End of my code
 
   private static final Logger LOG = LoggerFactory.getLogger(SpKafkaConsumer.class);
 
@@ -131,12 +128,10 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
         }
         //If an offset has been provided seek the offset to pick up processing from there
         for (Map.Entry<TopicPartition, Long> tp : endOffsets.entrySet()) {
-          EvaluationLogger.log("timingsPE", "beforeReprocessing", System.currentTimeMillis());
           if (tp.getValue() != startOffsets.get(tp.getKey().partition()) + 1) {
             //Need to reprocess events
             long endOffset = tp.getValue();
             kafkaConsumer.seek(tp.getKey(), startOffsets.get(tp.getKey().partition()));
-            int reprocessedEvents = 0;
             while (true) {
               ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(Duration.ofMillis(100));
               boolean brk = false;
@@ -147,34 +142,24 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
                   break;
                 }
                 byte[] rec = record.value();
-                System.out.println("RP offset: " + record.offset());
-                reprocessedEvents++;
                 eventProcessor.onEventReprocess(rec);
               }
               if (brk){
-                EvaluationLogger.log("timingsPE", "afterReprocessing", System.currentTimeMillis());
-                EvaluationLogger.log("timingsPE", "reprocessedEvents", reprocessedEvents);
                 //Process intermediary events
-                int intermediatelyProcessed = 0;
                 for(ConsumerRecord<String, byte[]> record : records){
                   if(record.offset() < lastRecord.offset()) continue;
-                  System.out.println("IP offset: " + record.offset());
                   byte[] rec = record.value();
                   eventProcessor.onEvent(rec);
-                  intermediatelyProcessed++;
                   this.offsets.put(record.partition(), record.offset() + 1);
                 }
                 kafkaConsumer.commitAsync(Collections.singletonMap(
                         new TopicPartition(topic, lastRecord.partition()),
                         new OffsetAndMetadata(lastRecord.offset() +1)), null);
-                EvaluationLogger.log("timingsPE", "afterIntermediateProcessing", System.currentTimeMillis());
-                EvaluationLogger.log("timingsPE", "intermediatelyProcessed", intermediatelyProcessed);
                 break;
               }
             }
           }
         }
-        System.out.println("Reprocessing done");
       }
       this.offsets = new HashMap<>();
       while (isRunning) {
@@ -184,7 +169,6 @@ public class SpKafkaConsumer implements EventConsumer<KafkaTransportProtocol>, R
           byte[] rec = record.value();
           eventProcessor.onEvent(rec);
           lastRecord = record;
-          System.out.println("P offset: " + record.offset());
           this.offsets.put(record.partition(), record.offset() + 1);
           if(++i%20==0)
             kafkaConsumer.commitAsync(Collections.singletonMap(

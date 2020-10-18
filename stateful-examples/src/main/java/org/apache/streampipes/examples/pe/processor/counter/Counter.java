@@ -43,7 +43,6 @@ public class Counter extends
     @Override
     public void onEvent(Event event, SpOutputCollector out) {
         event.addField("aggregation", ++counter);
-        System.out.println(counter);
         out.collect(event);
     }
 

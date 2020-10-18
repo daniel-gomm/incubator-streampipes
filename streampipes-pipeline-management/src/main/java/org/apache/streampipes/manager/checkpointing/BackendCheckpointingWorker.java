@@ -18,7 +18,6 @@
 
 package org.apache.streampipes.manager.checkpointing;
 
-import org.apache.streampipes.commons.evaluation.EvaluationLogger;
 import org.apache.streampipes.manager.execution.http.HttpRequestBuilder;
 import org.apache.streampipes.model.base.InvocableStreamPipesEntity;
 import org.apache.streampipes.model.client.pipeline.PipelineElementStatus;
@@ -52,8 +51,7 @@ public enum BackendCheckpointingWorker implements CheckpointingWorker {
                     inserted = true;
                 }
             }
-            System.out.println("Registered " + invoc.getElementId());
-            EvaluationLogger.log("CheckpointingWorker", "Registered " + invoc.getElementId(), System.currentTimeMillis());
+            //System.out.println("Registered " + invoc.getElementId());
             if(!isRunning) this.startWorker();
         }
     }
@@ -64,8 +62,7 @@ public enum BackendCheckpointingWorker implements CheckpointingWorker {
             invocations.entrySet().removeIf(entry -> elementId.equals(entry.getValue().elementID));
             if(invocations.isEmpty())
                 INSTANCE.stopWorker();
-            System.out.println("Unregistered " + elementId);
-            EvaluationLogger.log("CheckpointingWorker", "Unregistered " + elementId, System.currentTimeMillis());
+            //System.out.println("Unregistered " + elementId);
         }
 
     }
@@ -108,8 +105,7 @@ public enum BackendCheckpointingWorker implements CheckpointingWorker {
                             PipelineElementStatus resp = new HttpRequestBuilder(entry.getValue().invocableStreamPipesEntity, entry.getValue().invocableStreamPipesEntity.getElementId() + "/checkpoint").getState();
                             if(resp.isSuccess()){
                                 entry.getValue().db.add(resp.getOptionalMessage());
-                                System.out.println("Got state: " + entry.getValue().elementID);
-                                EvaluationLogger.log("CheckpointingWorker", "Got state: " + entry.getValue().elementID, System.currentTimeMillis());
+                                //System.out.println("Got state: " + entry.getValue().elementID);
                             }else if(resp.getOptionalMessage() != null && resp.getOptionalMessage().startsWith(entry.getValue().elementID)){
                                 //The latest state has already been fetched (if it is not present, get it from the latest checkpoint id)
                                 System.out.println("Latest state already fetched.");

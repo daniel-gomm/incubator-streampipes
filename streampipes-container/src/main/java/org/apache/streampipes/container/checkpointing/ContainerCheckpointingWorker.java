@@ -45,7 +45,7 @@ public enum ContainerCheckpointingWorker implements CheckpointingWorker {
 
     public static void registerPipelineElement(InvocableDeclarer<NamedStreamPipesEntity, InvocableStreamPipesEntity> invocation, Long interval, String elementId){
         synchronized (invocations){
-            System.out.println("Registered: " + elementId);
+            //System.out.println("Registered: " + elementId);
             trackedElements.add(elementId);
 
             boolean inserted = false;
@@ -68,7 +68,7 @@ public enum ContainerCheckpointingWorker implements CheckpointingWorker {
 
     public static void unregisterPipelineElement(String runningInstanceId){
         synchronized (invocations){
-            System.out.println("Unregistered: " + runningInstanceId);
+            //System.out.println("Unregistered: " + runningInstanceId);
             trackedElements.remove(runningInstanceId);
             invocations.entrySet().removeIf(entry -> runningInstanceId.equals(entry.getValue().elementId));
             if(invocations.isEmpty())

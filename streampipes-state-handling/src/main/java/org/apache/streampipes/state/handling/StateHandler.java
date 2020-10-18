@@ -19,7 +19,6 @@
 package org.apache.streampipes.state.handling;
 
 import com.google.common.reflect.TypeToken;
-import org.apache.streampipes.commons.evaluation.EvaluationLogger;
 import org.apache.streampipes.state.annotations.StateObject;
 import org.apache.streampipes.state.serializers.GsonSerializer;
 import org.apache.streampipes.state.serializers.StateSerializer;
@@ -73,7 +72,6 @@ public class StateHandler {
     }
 
     public String getState()  {
-        EvaluationLogger.log("timingsCheckpointing", "beforeSerialization", System.currentTimeMillis());
         Map<String, ClassfulObject> list = new HashMap<>();
         for(Field f : this.fields){
             try {
@@ -85,7 +83,6 @@ public class StateHandler {
                 e.printStackTrace();
             }
         }
-        EvaluationLogger.log("timingsCheckpointing", "afterSerialization", System.currentTimeMillis());
         return serializer.serialize(list);
     }
 }

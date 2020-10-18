@@ -19,7 +19,6 @@
 package org.apache.streampipes.examples.pe.processor.aggregator;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.streampipes.commons.evaluation.EvaluationLogger;
 import org.apache.streampipes.state.handling.StateHandler;
 import org.apache.streampipes.state.annotations.StateObject;
 import org.apache.streampipes.wrapper.runtime.StatefulEventProcessor;
@@ -41,7 +40,7 @@ public class Aggregator extends
   
   @StateObject public Queue<Double> pastEvents = new LinkedList<>();
   @StateObject public double value = 0;
-  @StateObject public String blowUpDinero;
+  @StateObject public String artificialStateSize;
   private int window_size;
   private int state_size;
 
@@ -56,8 +55,8 @@ public class Aggregator extends
 
   @Override
   public void onEvent(Event event, SpOutputCollector out) {
-    if(blowUpDinero == null){
-      blowUpDinero = "" + StringUtils.repeat("DDDDDDDD", state_size*1024/16);
+    if(artificialStateSize == null){
+      artificialStateSize = "" + StringUtils.repeat("DDDDDDDD", state_size*1024/16);
     }
     double currentValue = event.getFieldByRuntimeName("value").getAsPrimitive().getAsDouble();
     if(pastEvents.size() < this.window_size){
@@ -70,9 +69,7 @@ public class Aggregator extends
       System.out.println("Queue longer than " + this.window_size);
     }
     event.addField("aggregation", value);
-    System.out.println("processing:" + currentValue + " | result: " + value);
     out.collect(event);
-    EvaluationLogger.log("eventProcessed", System.currentTimeMillis(), currentValue);
   }
 
   @Override
