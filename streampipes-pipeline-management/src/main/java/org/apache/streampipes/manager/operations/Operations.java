@@ -46,14 +46,11 @@ import org.apache.streampipes.model.client.pipeline.PipelineElementRecommendatio
 import org.apache.streampipes.model.client.pipeline.PipelineModificationMessage;
 import org.apache.streampipes.model.client.pipeline.PipelineOperationStatus;
 import org.apache.streampipes.model.client.runtime.ContainerProvidedOptionsParameterRequest;
-import org.apache.streampipes.model.graph.DataProcessorInvocation;
-import org.apache.streampipes.model.graph.DataSinkInvocation;
 import org.apache.streampipes.model.staticproperty.Option;
 import org.apache.streampipes.model.template.PipelineTemplateDescription;
 import org.apache.streampipes.model.template.PipelineTemplateInvocation;
 import org.apache.streampipes.storage.management.StorageDispatcher;
 
-import java.nio.channels.Pipe;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -195,9 +192,9 @@ public class Operations {
     return status;
   }
 
-  public static PipelineOperationStatus migrateFailed(Pipeline pipeline, String nodes){
+  public static PipelineOperationStatus restore(Pipeline pipeline, String nodes){
     PipelineExecutor pe = new PipelineExecutor(pipeline,true, true, true);
-    PipelineOperationStatus status = pe.migrateFailed(nodes);
+    PipelineOperationStatus status = pe.restore(nodes);
     new PipelineStorageService(pipeline).updatePipeline();
     return status;
   }

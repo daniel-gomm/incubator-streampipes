@@ -275,7 +275,7 @@ public class PipelineExecutor {
 
 
 
-  public PipelineOperationStatus migrateFailed(String elementList){
+  public PipelineOperationStatus restore(String elementList){
     List<InvocableStreamPipesEntity> graphs = TemporaryGraphStorage.graphStorage.get(pipeline.getPipelineId());
     List<SpDataSet> dataSets = TemporaryGraphStorage.datasetStorage.get(pipeline.getPipelineId());
 

@@ -277,11 +277,11 @@ public class PipelineWithUserResource extends AbstractRestInterface implements I
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
     @GsonWithIds
-    public Response migrateFailed(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId, String nodes){
+    public Response restore(@PathParam("username") String username, @PathParam("pipelineId") String pipelineId, String nodes){
         try{
             Pipeline pipeline = getPipelineStorage()
                     .getPipeline(pipelineId);
-            PipelineOperationStatus status = Operations.migrateFailed(pipeline, nodes);
+            PipelineOperationStatus status = Operations.restore(pipeline, nodes);
             return ok(status);
         }catch(Exception e){
             e.printStackTrace();
